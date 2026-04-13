@@ -11,14 +11,18 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify(body),
     })
 
-    const data = await response.json()
+    // Safe parse — backend might return plain text on errors
+    const text = await response.text()
+    let data: any
+    try {
+      data = JSON.parse(text)
+    } catch {
+      data = { message: text || 'Something went wrong.' }
+    }
 
     return NextResponse.json(data, { status: response.status })
   } catch (error) {
     console.error('Register proxy error:', error)
-    return NextResponse.json(
-      { message: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ message: 'Internal server error' }, { status: 500 })
   }
 }

@@ -12,6 +12,7 @@ interface FormData {
   phone: string
   year: string
   section: string
+  stream: string
   password: string
   confirmPassword: string
   linkedin: string
@@ -25,14 +26,32 @@ interface FormErrors {
   [key: string]: string
 }
 
+const PLAYLIST = [
+  { title: 'Kids', artist: 'Kyle Dixon & Michael Stein', src: '/audio/kids.mp3' },
+  // Add more tracks here later:
+  // { title: 'Clair de Lune', artist: 'Debussy', src: '/audio/clair.mp3' },
+  // { title: 'Song Title', artist: 'Artist', src: '/audio/file.mp3' },
+]
+
 /* ── Helpers ─────────────────────────────────────────────────────────────── */
 function pwdScore(v: string): number {
   let s = 0
-  if (v.length >= 8)  s++
-  if (v.length >= 12) s++
-  if (/[A-Z]/.test(v) && /[0-9]/.test(v)) s++
+  if (v.length >= 8) s++
+  if (/[A-Z]/.test(v)) s++
+  if (/[a-z]/.test(v)) s++
+  if (/[0-9]/.test(v)) s++
   if (/[^A-Za-z0-9]/.test(v)) s++
   return s
+}
+
+function pwdError(v: string): string | null {
+  if (!v) return null
+  if (v.length < 8) return 'Min. 8 characters'
+  if (!/[A-Z]/.test(v)) return 'Add an uppercase letter'
+  if (!/[a-z]/.test(v)) return 'Add a lowercase letter'
+  if (!/[0-9]/.test(v)) return 'Add a number'
+  if (!/[^A-Za-z0-9]/.test(v)) return 'Add a special character (!@#$...)'
+  return null
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
@@ -43,13 +62,14 @@ export default function RegisterPage() {
   const glowRef     = useRef<HTMLDivElement>(null)
   const dotRef      = useRef<HTMLDivElement>(null)
   const ringRef     = useRef<HTMLDivElement>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
   const mouseRef    = useRef({ x: 0, y: 0 })
   const ringPos     = useRef({ x: 0, y: 0 })
 
   /* ── state ── */
   const [form, setForm]       = useState<FormData>({
     firstName: '', lastName: '', email: '', phone: '',
-    year: '', section: '', password: '', confirmPassword: '',
+    year: '', section: '', stream: '', password: '', confirmPassword: '',
     linkedin: '', github: '', tshirtSize: '',
     whyJoin: '', suggestions: '',
   })
@@ -61,10 +81,15 @@ export default function RegisterPage() {
   const [termsOpen, setTermsOpen]   = useState(false)
   const [strength, setStrength]     = useState(0)
   const [progress, setProgress]     = useState(0)
+  const [showPwd, setShowPwd]             = useState(false)
+  const [showConfirmPwd, setShowConfirmPwd] = useState(false)
+  const [rickMode, setRickMode] = useState(false)
+  const [musicPlaying, setMusicPlaying] = useState(false)
+  const [currentTrack, setCurrentTrack] = useState(0)
 
   /* ── progress calc ── */
   useEffect(() => {
-    const required = ['firstName','lastName','email','phone','year','section',
+    const required = ['firstName','lastName','email','phone','year','section', 'stream',
                       'password','confirmPassword','linkedin','github','whyJoin']
     const filled = required.filter(k => (form as any)[k]).length
     const chkCount = Object.values(checks).filter(Boolean).length
@@ -227,6 +252,33 @@ export default function RegisterPage() {
     return () => { window.removeEventListener('mousemove', onMove); cancelAnimationFrame(raf) }
   }, [])
 
+  useEffect(() => {
+  if (!audioRef.current) {
+    audioRef.current = new Audio(PLAYLIST[currentTrack].src)
+    audioRef.current.loop = true
+    audioRef.current.volume = 0.35
+  }
+  if (musicPlaying) {
+    audioRef.current.play().catch(() => {})
+  } else {
+    audioRef.current.pause()
+  }
+  return () => {
+    audioRef.current?.pause()
+  }
+}, [musicPlaying])
+
+useEffect(() => {
+  if (audioRef.current) {
+    const wasPlaying = musicPlaying
+    audioRef.current.pause()
+    audioRef.current = new Audio(PLAYLIST[currentTrack].src)
+    audioRef.current.loop = true
+    audioRef.current.volume = 0.35
+    if (wasPlaying) audioRef.current.play().catch(() => {})
+  }
+}, [currentTrack])
+
   /* ── form helpers ── */
   const set = (k: keyof FormData) => (e: React.ChangeEvent<HTMLInputElement|HTMLSelectElement|HTMLTextAreaElement>) => {
     setForm(f => ({ ...f, [k]: e.target.value }))
@@ -242,8 +294,11 @@ export default function RegisterPage() {
     if (!form.phone || form.phone.replace(/\D/g,'').length<10) errs.phone = 'Valid phone number required'
     if (!form.year)    errs.year    = 'Select your year'
     if (!form.section) errs.section = 'Select your section'
-    if (!form.password || form.password.length<8) errs.password = 'Min. 8 characters required'
-    if (form.password !== form.confirmPassword) errs.confirmPassword = "Passwords don't match"
+    if (!form.stream) errs.stream = 'Select your stream'
+    const pwdErr = pwdError(form.password)
+    if (pwdErr) { errs.password = pwdErr }
+    if (form.password && form.confirmPassword && form.password !== form.confirmPassword)
+    errs.confirmPassword = "Passwords don't match"
     if (!form.linkedin.trim()) errs.linkedin = 'LinkedIn profile required'
     if (!form.github.trim())   errs.github   = 'GitHub profile required'
     if (!form.tshirtSize)      errs.tshirtSize = 'Please select a size'
@@ -268,6 +323,7 @@ export default function RegisterPage() {
           phone:       form.phone.trim(),
           year:        form.year,
           section:     form.section,
+          stream:      form.stream,
           password:    form.password,
           linkedin:    form.linkedin.trim(),
           github:      form.github.trim(),
@@ -290,12 +346,13 @@ export default function RegisterPage() {
   }
 
   /* ── bar colours ── */
-  const barCls = (i: number) => {
-    if (i >= strength) return 'bg-border2'
-    if (strength <= 1) return 'bg-red-500'
-    if (strength === 2) return 'bg-orange-400'
-    return 'bg-acid'
-  }
+ const barCls = (i: number) => {
+  if (i >= strength) return 'bg-border2'
+  if (strength <= 2) return 'bg-red-500'
+  if (strength === 3) return 'bg-orange-400'
+  if (strength === 4) return 'bg-yellow-400'
+  return 'bg-acid'
+}
 
   /* ── input class ── */
   const ic = (k: string) =>
@@ -307,7 +364,8 @@ export default function RegisterPage() {
      SUCCESS SCREEN
   ═══════════════════════════════════════════════════════════════════════════ */
   if (success) return (
-    <div className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center text-center px-10 animate-[fadeIn_.6s_ease]">
+    <div style={{position:'fixed',inset:0,zIndex:9999,background:'#000'}}
+  className="flex flex-col items-center justify-center text-center px-10 animate-[fadeIn_.6s_ease]">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/logo.png" alt="Chathurya" className="w-16 h-16 object-contain mb-8"
         style={{animation:'logoPulse 2s ease-in-out infinite'}} />
@@ -330,45 +388,12 @@ export default function RegisterPage() {
   return (
     <>
       {/* Global styles injected once */}
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500&family=JetBrains+Mono:wght@400;500&display=swap');
-        :root { --acid:#CFFF00; --acid2:#a8cc00; }
-        body { background:#000; cursor:none; overflow-x:hidden; }
-        ::-webkit-scrollbar { width:3px }
-        ::-webkit-scrollbar-track { background:#0a0a0a }
-        ::-webkit-scrollbar-thumb { background:var(--acid2); border-radius:2px }
-        @keyframes fadeIn    { from{opacity:0} to{opacity:1} }
-        @keyframes secEnter  { to{opacity:1;transform:translateY(0)} }
-        @keyframes floatBadge{ 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
-        @keyframes pulseLine { 0%,100%{opacity:.15} 50%{opacity:.5} }
-        @keyframes logoPulse { 0%,100%{filter:drop-shadow(0 0 6px rgba(207,255,0,.4))} 50%{filter:drop-shadow(0 0 22px rgba(207,255,0,.85))} }
-        @keyframes blinkTag  { 0%,100%{opacity:1} 50%{opacity:.55} }
-        @keyframes modalIn   { from{opacity:0;transform:scale(.92) translateY(20px)} to{opacity:1;transform:scale(1) translateY(0)} }
-        @keyframes spin      { to{transform:translate(-50%,-50%) rotate(360deg)} }
-        .sec { opacity:0; transform:translateY(20px); animation:secEnter .5s cubic-bezier(.16,1,.3,1) forwards }
-        .badge-float { animation:floatBadge 4s ease-in-out infinite }
-        .grid-line-v { position:absolute;width:1px;top:0;bottom:0;left:50%;background:#222;animation:pulseLine 4s ease-in-out infinite }
-        .grid-line-h { position:absolute;height:1px;left:0;right:0;top:50%;background:#222;animation:pulseLine 4s ease-in-out infinite 2s }
-        .typing-line { position:absolute;bottom:0;left:0;height:2px;background:var(--acid);border-radius:0 0 8px 8px;width:0;transition:width .3s cubic-bezier(.4,0,.2,1);pointer-events:none }
-        input:focus ~ .typing-line, textarea:focus ~ .typing-line { width:100% }
-        .typing-dot { position:absolute;right:14px;top:50%;transform:translateY(-50%);width:6px;height:6px;border-radius:50%;background:var(--acid);opacity:0;transition:opacity .2s;pointer-events:none }
-        input:not(:placeholder-shown) ~ .typing-dot { opacity:1 }
-        .social-wrap input { padding-left:130px }
-        .social-wrap.gh input { padding-left:106px }
-        .social-prefix { position:absolute;left:14px;top:50%;transform:translateY(-50%);font-family:'JetBrains Mono',monospace;font-size:11px;color:#555;pointer-events:none;white-space:nowrap }
-        .social-wrap input::placeholder { font-family:'JetBrains Mono',monospace;font-size:12px;color:#555 }
-        .modal-anim { animation:modalIn .4s cubic-bezier(.16,1,.3,1) }
-        .submit-btn { transition:all .3s }
-        .submit-btn:hover:not(:disabled) { transform:translateY(-2px);box-shadow:0 20px 60px rgba(207,255,0,.25) }
-        .submit-btn:active:not(:disabled) { transform:translateY(0) }
-        .tscroll::-webkit-scrollbar{width:3px}
-        .tscroll::-webkit-scrollbar-thumb{background:var(--acid2);border-radius:2px}
-      `}</style>
+      
 
       {/* Cursor */}
-      <div ref={dotRef} className="fixed z-[9999] pointer-events-none rounded-full mix-blend-screen"
+      <div ref={dotRef} className="fixed z-[9999] pointer-events-none rounded-full mix-blend-screen max-[768px]:hidden"
         style={{width:6,height:6,background:'#CFFF00',transform:'translate(-50%,-50%)'}} />
-      <div ref={ringRef} className="fixed z-[9998] pointer-events-none rounded-full transition-[width,height,border-color] duration-200"
+     <div ref={ringRef} className="fixed z-[9998] pointer-events-none rounded-full transition-[width,height,border-color] duration-200 max-[768px]:hidden"
         style={{width:36,height:36,border:'1.5px solid rgba(207,255,0,.4)',transform:'translate(-50%,-50%)'}} />
 
       {/* WebGL canvas */}
@@ -404,8 +429,8 @@ export default function RegisterPage() {
             <div className="tscroll overflow-y-auto flex-1 pr-2 text-[12px] text-text-dim leading-relaxed space-y-3">
               {[
                 ['Hey, welcome to the circle 🙌', "Before you step in, we want to be upfront about what being part of Chathurya means. This isn't a form you fill and forget — it's a commitment to something genuinely great."],
-                ['Who we are', "Chathurya is Seshadripuram College's Student Developers Club — a close-knit community of curious minds who love building things, learning together, and making college life count."],
-                ['What joining means', "You're committing to active, enthusiastic membership. Show up to workshops, bring your energy, and contribute. You don't need to be an expert — just hungry to learn and grow."],
+                ['Who we are?', "Chathurya is Seshadripuram College's Student Developers Club — a close-knit community of curious minds who love building things, learning together, and making college life count."],
+                ['What joining means?', "You're committing to active, enthusiastic membership. Show up to workshops, bring your energy, and contribute. You don't need to be an expert — just hungry to learn and grow."],
                 ['The club tee', "Every member gets the exclusive Chathurya tee with their name on the back. Once you sign up and your size is confirmed, the order goes in — so that's final. We've put real effort into quality and it's absolutely worth it."],
                 ['Your data & privacy', "We collect your info solely for club operations, your NFC membership card, and event communication. We don't share it with anyone outside the club."],
                 ['Invite-only, always', "Applications are reviewed by our leads. If selected, you'll receive a personal email invite to complete onboarding. We're selective because the community we're building matters."],
@@ -432,10 +457,10 @@ export default function RegisterPage() {
       )}
 
       {/* ── PAGE LAYOUT ── */}
-      <div className="relative z-[2] grid max-w-[1400px] mx-auto" style={{gridTemplateColumns:'1fr 1fr'}}>
+      <div className="page-grid relative z-[2] max-w-[1400px] mx-auto">
 
         {/* ── LEFT: HERO ── */}
-        <div ref={heroRef} className="sticky top-0 h-screen flex flex-col justify-between overflow-hidden"
+        <div ref={heroRef} className="sticky top-0 h-screen flex flex-col justify-between overflow-hidden max-[768px]:relative max-[768px]:h-auto max-[768px]:border-b max-[768px]:border-border"
           style={{padding:'48px',borderRight:'1px solid #222'}}>
           <div className="hero-glow absolute pointer-events-none z-0 rounded-full"
             ref={glowRef}
@@ -478,20 +503,58 @@ export default function RegisterPage() {
               ))}
             </div>
 
-            {/* T-shirt trigger */}
-            <div onClick={() => setTshirtOpen(true)}
-              className="mt-10 inline-flex items-center gap-3 px-5 py-4 border border-border2 rounded-xl bg-panel cursor-none transition-all hover:border-acid/30 hover:-translate-y-0.5 hover:shadow-[0_18px_56px_rgba(207,255,0,.07)] group">
-              <div className="w-9 h-9 rounded-lg bg-acid/10 flex items-center justify-center text-lg flex-shrink-0">👕</div>
-              <div>
-                <div className="font-syne font-bold text-white text-[12px]">Exclusive Club Tee</div>
-                <div className="font-mono text-[10px] text-text-dim">tap to preview the drop</div>
-              </div>
-              <div className="ml-auto w-7 h-7 border border-border2 rounded-full flex items-center justify-center text-acid text-[10px] flex-shrink-0 group-hover:border-acid group-hover:bg-acid/8 transition-all">▶</div>
-            </div>
+            <div className="mt-10 flex flex-col gap-3 w-fit">
+
+  {/* T-shirt trigger */}
+  <div onClick={() => setTshirtOpen(true)}
+    className="flex items-center gap-3 px-5 py-4 border border-border2 rounded-xl bg-panel cursor-none transition-all hover:border-acid/30 hover:-translate-y-0.5 hover:shadow-[0_18px_56px_rgba(207,255,0,.07)] group">
+    <div className="w-9 h-9 rounded-lg bg-acid/10 flex items-center justify-center text-lg flex-shrink-0">👕</div>
+    <div>
+      <div className="font-syne font-bold text-white text-[12px]">Exclusive Club Tee</div>
+      <div className="font-mono text-[10px] text-text-dim">tap to preview the drop</div>
+    </div>
+    <div className="ml-auto w-7 h-7 border border-border2 rounded-full flex items-center justify-center text-acid text-[10px] flex-shrink-0 group-hover:border-acid group-hover:bg-acid/8 transition-all">▶</div>
+  </div>
+
+  {/* Music player */}
+  <div className="flex items-center gap-3 px-5 py-4 border border-border2 rounded-xl bg-panel"
+    style={musicPlaying ? {borderColor:'rgba(207,255,0,0.25)',boxShadow:'0 0 20px rgba(207,255,0,0.06)'} : {}}>
+    <div className="w-9 h-9 rounded-lg bg-acid/10 flex items-center justify-center flex-shrink-0">
+      {musicPlaying ? (
+        <div className="flex items-end gap-[2px] h-4">
+          {[0,1,2].map(i => (
+            <div key={i} className="w-[3px] bg-acid rounded-sm"
+              style={{height:'100%',animation:'musicBar 0.8s ease-in-out infinite',animationDelay:`${i*0.15}s`}} />
+          ))}
+        </div>
+      ) : (
+        <span className="text-lg">🎵</span>
+      )}
+    </div>
+    <div className="flex-1 min-w-0">
+      <div className="font-syne font-bold text-white text-[12px] truncate">{PLAYLIST[currentTrack].title}</div>
+      <div className="font-mono text-[10px] text-text-dim truncate">{PLAYLIST[currentTrack].artist}</div>
+    </div>
+    {PLAYLIST.length > 1 && (
+      <button type="button"
+        onClick={e => { e.stopPropagation(); setCurrentTrack(t => (t + 1) % PLAYLIST.length) }}
+        className="w-7 h-7 border border-border2 rounded-full flex items-center justify-center text-text-dim hover:text-acid hover:border-acid transition-all cursor-none text-[10px] flex-shrink-0">
+        ⏭
+      </button>
+    )}
+    <button type="button"
+      onClick={e => { e.stopPropagation(); setMusicPlaying(p => !p) }}
+      className="w-7 h-7 border border-border2 rounded-full flex items-center justify-center transition-all cursor-none flex-shrink-0"
+      style={musicPlaying ? {borderColor:'rgba(207,255,0,0.4)',color:'#CFFF00'} : {color:'#555'}}>
+      {musicPlaying ? '⏸' : '▶'}
+    </button>
+  </div>
+
+</div>
           </div>
 
           {/* Stats */}
-          <div className="relative z-[1] flex gap-6 pt-6 border-t border-border">
+          <div className="relative z-[1] flex gap-6 pt-6 border-t border-border max-[768px]:hidden">
             {[['∞','possibilities'],['01','community'],['3yr','journey']].map(([v,l]) => (
               <div key={l}>
                 <div className="font-syne font-extrabold text-acid text-[19px]">{v}</div>
@@ -520,14 +583,14 @@ export default function RegisterPage() {
               <div className="grid grid-cols-2 gap-3">
                 <Field label="First Name" error={errors.firstName}>
                   <div className="relative">
-                    <input className={ic('firstName')} id="firstName" type="text" placeholder="Nandan"
+                    <input className={ic('firstName')} id="firstName" type="text" placeholder="Your first name"
                       value={form.firstName} onChange={set('firstName')} />
                     <div className="typing-line" /><div className="typing-dot" />
                   </div>
                 </Field>
                 <Field label="Last Name" error={errors.lastName}>
                   <div className="relative">
-                    <input className={ic('lastName')} id="lastName" type="text" placeholder="Kumar"
+                    <input className={ic('lastName')} id="lastName" type="text" placeholder="Your last name"
                       value={form.lastName} onChange={set('lastName')} />
                     <div className="typing-line" /><div className="typing-dot" />
                   </div>
@@ -548,7 +611,7 @@ export default function RegisterPage() {
                 </Field>
                 <Field label="Phone Number" error={errors.phone}>
                   <div className="relative">
-                    <input className={ic('phone')} type="tel" placeholder="+91 98765 43210"
+                    <input className={ic('phone')} type="tel" placeholder="+91 1234567890"
                       value={form.phone} onChange={set('phone')} />
                     <div className="typing-line" /><div className="typing-dot" />
                   </div>
@@ -556,7 +619,7 @@ export default function RegisterPage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Year of Study" error={errors.year}>
-                  <select className={ic('year')} value={form.year} onChange={set('year')}
+                  <select className={ic('year') + ' appearance-none'}  value={form.year} onChange={set('year')}
                     style={{backgroundImage:`url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23555' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,backgroundRepeat:'no-repeat',backgroundPosition:'right 14px center',paddingRight:40,cursor:'none'}}>
                     <option value="" disabled>Select year</option>
                     <option value="1">1st Year</option>
@@ -565,7 +628,7 @@ export default function RegisterPage() {
                   </select>
                 </Field>
                 <Field label="Section" error={errors.section}>
-                  <select className={ic('section')} value={form.section} onChange={set('section')}
+                  <select className={ic('section') + ' appearance-none'} value={form.section} onChange={set('section')}
                     style={{backgroundImage:`url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23555' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,backgroundRepeat:'no-repeat',backgroundPosition:'right 14px center',paddingRight:40,cursor:'none'}}>
                     <option value="" disabled>Select section</option>
                     <option value="A">Section A</option>
@@ -574,33 +637,57 @@ export default function RegisterPage() {
                   </select>
                 </Field>
               </div>
-            </div>
-
-            {/* ── PASSWORD ── */}
-            <div className="sec mb-7" style={{animationDelay:'.22s'}}>
-              <SectionLabel>Set Your Password</SectionLabel>
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="Password" error={errors.password}>
-                  <div className="relative">
-                    <input className={ic('password')} type="password" placeholder="Min. 8 characters"
-                      value={form.password} onChange={set('password')} />
-                    <div className="typing-line" />
-                  </div>
-                  <div className="flex gap-1 mt-1">
-                    {[0,1,2,3].map(i => (
-                      <div key={i} className={`flex-1 h-[2px] rounded transition-colors duration-300 ${barCls(i+1)}`} />
-                    ))}
-                  </div>
-                </Field>
-                <Field label="Confirm Password" error={errors.confirmPassword}>
-                  <div className="relative">
-                    <input className={ic('confirmPassword')} type="password" placeholder="Repeat your password"
-                      value={form.confirmPassword} onChange={set('confirmPassword')} />
-                    <div className="typing-line" />
-                  </div>
+              <div className="mt-3">
+                <Field label="Stream" error={errors.stream}>
+                  <select className={ic('stream') + ' appearance-none'} value={form.stream} onChange={set('stream')}
+                    style={{backgroundImage:`url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23555' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,backgroundRepeat:'no-repeat',backgroundPosition:'right 14px center',paddingRight:40,cursor:'none'}}>
+                    <option value="" disabled>Select stream</option>
+                    <option value="BCA">BCA</option>
+                    <option value="BCom">BCom</option>
+                    <option value="BBA">BBA</option>
+                  </select>
                 </Field>
               </div>
             </div>
+
+            {/* ── PASSWORD ── */}
+<div className="sec mb-7" style={{animationDelay:'.22s'}}>
+  <SectionLabel>Set Your Password</SectionLabel>
+  <div className="grid grid-cols-2 gap-3">
+    <Field label="Password" error={errors.password}>
+      <div className="relative">
+        <input className={ic('password')} type={showPwd ? 'text' : 'password'}
+          placeholder="Min. 8 characters"
+          value={form.password} onChange={set('password')} />
+        <button type="button" onClick={() => setShowPwd(p => !p)}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-text-dim hover:text-acid transition-colors cursor-none text-[11px] font-mono">
+          {showPwd ? 'hide' : 'show'}
+        </button>
+        <div className="typing-line" />
+      </div>
+      {form.password && !errors.password && pwdError(form.password) && (
+        <p className="text-[10px] text-orange-400 font-mono">{pwdError(form.password)}</p>
+      )}
+      <div className="flex gap-1 mt-1">
+        {[0,1,2,3,4].map(i => (
+          <div key={i} className={`flex-1 h-[2px] rounded transition-colors duration-300 ${barCls(i+1)}`} />
+        ))}
+      </div>
+    </Field>
+    <Field label="Confirm Password" error={errors.confirmPassword}>
+      <div className="relative">
+        <input className={ic('confirmPassword')} type={showConfirmPwd ? 'text' : 'password'}
+          placeholder="Repeat your password"
+          value={form.confirmPassword} onChange={set('confirmPassword')} />
+        <button type="button" onClick={() => setShowConfirmPwd(p => !p)}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-text-dim hover:text-acid transition-colors cursor-none text-[11px] font-mono">
+          {showConfirmPwd ? 'hide' : 'show'}
+        </button>
+        <div className="typing-line" />
+      </div>
+    </Field>
+  </div>
+</div>
 
             {/* ── SOCIALS ── */}
             <div className="sec mb-7" style={{animationDelay:'.29s'}}>
@@ -725,6 +812,29 @@ export default function RegisterPage() {
                 // invite-only · reviewed by club leads
               </p>
             </div>
+            {/* Rick easter egg */}
+              <div className="mt-4 text-center">
+                <button type="button" onClick={() => setRickMode(true)}
+                  className="font-mono text-[9px] text-border2 hover:text-muted transition-colors cursor-none">
+                  // you found a secret
+                </button>
+              </div>
+
+              {rickMode && (
+                <div className="fixed inset-0 z-[2000] bg-black/95 backdrop-blur-2xl flex flex-col items-center justify-center p-5"
+                  onClick={() => setRickMode(false)}>
+                  <p className="font-mono text-[11px] text-acid mb-4">// never gonna give you up 🎵</p>
+                  <div className="rounded-xl overflow-hidden border border-border2" style={{width:'100%',maxWidth:560,aspectRatio:'16/9'}}>
+                    <iframe
+                      width="100%" height="100%"
+                      src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1"
+                      allow="autoplay"
+                      allowFullScreen
+                    />
+                  </div>
+                  <p className="font-mono text-[10px] text-muted mt-4">click anywhere to escape</p>
+                </div>
+              )}
 
           </form>
         </div>

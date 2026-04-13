@@ -16,49 +16,47 @@ def get_supabase() -> Client:
 
 # ── Applications ──────────────────────────────────────────────────────────────
 
-async def create_application(data: dict) -> dict:
-    """Insert a new membership application. Returns the created row."""
+def create_application(data: dict) -> dict:
     sb = get_supabase()
-    response = (
-        sb.table("applications")
-        .insert(data)
-        .execute()
-    )
+    response = sb.table("applications").insert(data).execute()
     return response.data[0]
 
 
-async def get_application_by_email(email: str) -> dict | None:
+def get_application_by_email(email: str) -> dict | None:
     sb = get_supabase()
     response = (
         sb.table("applications")
         .select("*")
         .eq("email", email)
-        .maybe_single()
+        .limit(1)
         .execute()
     )
-    return response.data
+    if response.data and len(response.data) > 0:
+        return response.data[0]
+    return None
 
 
-async def application_exists(email: str) -> bool:
-    result = await get_application_by_email(email)
-    return result is not None
+def application_exists(email: str) -> bool:
+    return get_application_by_email(email) is not None
 
 
 # ── Members ───────────────────────────────────────────────────────────────────
 
-async def get_member_by_uid(encrypted_uid: str) -> dict | None:
+def get_member_by_uid(encrypted_uid: str) -> dict | None:
     sb = get_supabase()
     response = (
         sb.table("members")
         .select("*")
         .eq("encrypted_uid", encrypted_uid)
-        .maybe_single()
+        .limit(1)
         .execute()
     )
-    return response.data
+    if response.data and len(response.data) > 0:
+        return response.data[0]
+    return None
 
 
-async def get_member_public_profile(encrypted_uid: str) -> dict | None:
+def get_member_public_profile(encrypted_uid: str) -> dict | None:
     sb = get_supabase()
     response = (
         sb.table("members")
@@ -68,7 +66,9 @@ async def get_member_public_profile(encrypted_uid: str) -> dict | None:
             "visibility_mode, batch_year, is_alumni, created_at"
         )
         .eq("encrypted_uid", encrypted_uid)
-        .maybe_single()
+        .limit(1)
         .execute()
     )
-    return response.data
+    if response.data and len(response.data) > 0:
+        return response.data[0]
+    return None
