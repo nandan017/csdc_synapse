@@ -569,7 +569,7 @@ export default function HomePage() {
   justifyContent:'center',
   position:'relative',
   overflow:'hidden',
-  padding:'120px 24px 80px',
+  padding:'80px 24px 80px',
 }}>
   <canvas id="hero-canvas" style={{
   position:'absolute', inset:0,
@@ -892,7 +892,7 @@ export default function HomePage() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo.png" alt="Chathurya" style={{width:28,height:28,objectFit:'contain',opacity:.7}} />
             <div>
-              <div style={{fontFamily:'var(--font-syne)',fontWeight:800,color:'#555',fontSize:13,letterSpacing:'-.02em'}}>Chathurya</div>
+              <div style={{fontFamily:'var(--font-syne)',fontWeight:800,color:'#fff',fontSize:13,letterSpacing:'-.02em'}}>Chathurya</div>
               <div style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#2a2a2a',letterSpacing:'.06em'}}>Student Developers Club · Est. 2025</div>
             </div>
           </div>
