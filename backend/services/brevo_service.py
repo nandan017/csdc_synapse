@@ -261,6 +261,8 @@ async def send_invite_email(
         },
         subject=f"You're in, {first_name}! Complete your Chathurya onboarding 🚀",
         html_content=_build_invite_html(first_name, invite_token),
+        headers={"X-Mailin-custom": "custom_header_1:custom_value_1"},
+        params={"DISABLE_CLICK_TRACKING": True},
     )
     try:
         api.send_transac_email(send_smtp_email)
