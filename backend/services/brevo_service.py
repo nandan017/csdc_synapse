@@ -130,6 +130,7 @@ def _build_confirmation_html(first_name: str) -> str:
 """
 def _build_invite_html(first_name: str, invite_token: str) -> str:
     invite_url = f"{settings.frontend_url}/onboard?token={invite_token}"
+    print(f"[DEBUG] Invite URL being sent: {invite_url}")
     return f"""
 <!DOCTYPE html>
 <html lang="en">
