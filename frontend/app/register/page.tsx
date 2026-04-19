@@ -460,7 +460,7 @@ useEffect(() => {
       <div className="page-grid relative z-[2] max-w-[1400px] mx-auto">
 
         {/* ── LEFT: HERO ── */}
-        <div ref={heroRef} className="sticky top-0 h-screen flex flex-col justify-between overflow-hidden max-[768px]:relative max-[768px]:h-auto max-[768px]:border-b max-[768px]:border-border"
+        <div ref={heroRef} className="sticky top-0 h-screen flex flex-col justify-between overflow-hidden max-[768px]:relative max-[768px]:h-auto max-[768px]:border-b max-[768px]:border-border max-[768px]:!p-6 max-[768px]:!border-r-0"
           style={{padding:'48px',borderRight:'1px solid #222'}}>
           <div className="hero-glow absolute pointer-events-none z-0 rounded-full"
             ref={glowRef}
@@ -565,7 +565,7 @@ useEffect(() => {
         </div>
 
         {/* ── RIGHT: FORM ── */}
-        <div style={{padding:'48px',minHeight:'100vh'}}>
+        <div className="max-[768px]:!p-5" style={{padding:'48px',minHeight:'100vh'}}>
           <h2 className="font-syne font-extrabold text-white text-[22px] tracking-[-0.03em] mb-1">Apply for Membership</h2>
           <p className="text-[13px] text-text-dim mb-7">Fill in your details — we&apos;ll review and send your personal invite.</p>
 
@@ -580,7 +580,7 @@ useEffect(() => {
             {/* ── IDENTITY ── */}
             <div className="sec mb-7" style={{animationDelay:'.08s'}}>
               <SectionLabel>Identity</SectionLabel>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 max-[640px]:grid-cols-1 gap-3">
                 <Field label="First Name" error={errors.firstName}>
                   <div className="relative">
                     <input className={ic('firstName')} id="firstName" type="text" placeholder="Your first name"
@@ -601,7 +601,7 @@ useEffect(() => {
             {/* ── CONTACT ── */}
             <div className="sec mb-7" style={{animationDelay:'.15s'}}>
               <SectionLabel>Contact</SectionLabel>
-              <div className="grid grid-cols-2 gap-3 mb-3">
+              <div className="grid grid-cols-2 max-[640px]:grid-cols-1 gap-3 mb-3">
                 <Field label="Email Address" error={errors.email}>
                   <div className="relative">
                     <input className={ic('email')} type="email" placeholder="you@college.edu"
@@ -617,7 +617,7 @@ useEffect(() => {
                   </div>
                 </Field>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 max-[640px]:grid-cols-1 gap-3">
                 <Field label="Year of Study" error={errors.year}>
                   <select className={ic('year') + ' appearance-none'}  value={form.year} onChange={set('year')}
                     style={{backgroundImage:`url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23555' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,backgroundRepeat:'no-repeat',backgroundPosition:'right 14px center',paddingRight:40,cursor:'none'}}>
@@ -653,7 +653,7 @@ useEffect(() => {
             {/* ── PASSWORD ── */}
 <div className="sec mb-7" style={{animationDelay:'.22s'}}>
   <SectionLabel>Set Your Password</SectionLabel>
-  <div className="grid grid-cols-2 gap-3">
+  <div className="grid grid-cols-2 max-[640px]:grid-cols-1 gap-3">
     <Field label="Password" error={errors.password}>
       <div className="relative">
         <input className={ic('password')} type={showPwd ? 'text' : 'password'}

@@ -569,7 +569,7 @@ export default function HomePage() {
   justifyContent:'center',
   position:'relative',
   overflow:'hidden',
-  padding:'80px 24px 80px',
+  padding:'80px 16px 80px',
 }}>
   <canvas id="hero-canvas" style={{
   position:'absolute', inset:0,
@@ -586,11 +586,11 @@ export default function HomePage() {
       fontFamily:'var(--font-jetbrains)', fontSize:10,
       color:'#CFFF00', letterSpacing:'.2em',
       textTransform:'uppercase', marginBottom:32,
-      display:'flex', alignItems:'center', justifyContent:'center', gap:14,
+      display:'flex', alignItems:'center', justifyContent:'center', gap:14, flexWrap:'wrap',
     }}>
-      <span style={{width:32, height:1, background:'#CFFF00', display:'inline-block'}} />
+      <span className="hide-mobile" style={{width:32, height:1, background:'#CFFF00', display:'inline-block'}} />
       Est. 2025 · Seshadripuram College · Invite-Only
-      <span style={{width:32, height:1, background:'#CFFF00', display:'inline-block'}} />
+      <span className="hide-mobile" style={{width:32, height:1, background:'#CFFF00', display:'inline-block'}} />
     </div>
 
     {/* Logo — glitch flicker */}
@@ -605,7 +605,8 @@ export default function HomePage() {
       fontFamily:'var(--font-syne)', fontWeight:800,
       color:'#fff', lineHeight:.88,
       letterSpacing:'-.05em', textAlign:'center',
-      fontSize:'clamp(4rem,9vw,8rem)',
+      fontSize:'clamp(2.5rem,9vw,8rem)', 
+      wordBreak:'break-word',
       marginBottom:16,
     }}>
       Chathurya
@@ -668,7 +669,7 @@ export default function HomePage() {
 
       {/* ── STATS BAR ── */}
       <div style={{borderTop:'1px solid #111',borderBottom:'1px solid #111',padding:'20px 24px',background:'rgba(10,10,10,0.9)'}}>
-        <div style={{maxWidth:1200,margin:'0 auto',display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:16,textAlign:'center'}}>
+        <div className="stats-grid" style={{maxWidth:1200,margin:'0 auto',display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:16,textAlign:'center'}}>
           {[['2025','Founded'],['5','Club Leads'],['2+','Workshops'],['Invite-Only','Membership']].map(([v,l]) => (
   <StatCard key={l} value={v} label={l} />
 ))}
@@ -887,7 +888,7 @@ export default function HomePage() {
 
       {/* ── FOOTER ── */}
       <footer style={{borderTop:'1px solid #0f0f0f',padding:'40px 24px'}}>
-        <div style={{maxWidth:1200,margin:'0 auto',display:'flex',flexWrap:'wrap',alignItems:'center',justifyContent:'space-between',gap:20}}>
+        <div style={{maxWidth:1200,margin:'0 auto',display:'flex',flexWrap:'wrap',alignItems:'center',justifyContent:'center',gap:20}}>
           <div style={{display:'flex',alignItems:'center',gap:12}}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo.png" alt="Chathurya" style={{width:28,height:28,objectFit:'contain',opacity:.7}} />
@@ -910,7 +911,7 @@ export default function HomePage() {
               </a>
             ))}
           </div>
-          <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#1e1e1e',letterSpacing:'.06em'}}>
+          <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#1e1e1e',letterSpacing:'.06em',width:'100%',textAlign:'center'}}>
             © 2025 Chathurya SDC
           </div>
         </div>

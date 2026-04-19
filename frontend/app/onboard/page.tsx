@@ -217,7 +217,7 @@ function OnboardContent() {
             <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#aaa',letterSpacing:'.1em',textTransform:'uppercase',marginBottom:10}}>
               From your application
             </div>
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'6px 20px'}}>
+            <div className="onboard-info-grid" style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'6px 20px'}}>
               {[
                 ['Name',    `${appData.first_name} ${appData.last_name}`],
                 ['Email',   appData.email],
