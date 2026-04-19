@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
@@ -13,6 +13,34 @@ const NAV = [
   { href:'/admin/analytics',   label:'Analytics',    icon:'◎' },
   { href:'/admin/settings',    label:'Settings',     icon:'⊙' },
 ]
+// Add this component above the AdminLayout function:
+function Cursor() {
+  const dotRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      if (dotRef.current) {
+        dotRef.current.style.left = e.clientX + 'px'
+        dotRef.current.style.top  = e.clientY + 'px'
+        dotRef.current.style.opacity = '1'
+      }
+    }
+    window.addEventListener('mousemove', onMove)
+    return () => window.removeEventListener('mousemove', onMove)
+  }, [])
+
+  return (
+    <div ref={dotRef} style={{
+      position:'fixed', zIndex:10000, pointerEvents:'none',
+      width:8, height:8, borderRadius:'50%',
+      background:'#CFFF00',
+      transform:'translate(-50%,-50%)',
+      boxShadow:'0 0 8px rgba(207,255,0,0.7)',
+      opacity:0,
+      transition:'opacity .2s',
+    }} />
+  )
+}
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname  = usePathname()
@@ -57,6 +85,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         .admin-nav-item.active{background:rgba(207,255,0,0.08);color:#CFFF00;border:1px solid rgba(207,255,0,0.12)}
         .admin-nav-item .nav-icon{font-size:13px;flex-shrink:0;width:18px;text-align:center}
       `}</style>
+       <Cursor/>
 
       {/* Sidebar */}
       <aside style={{
@@ -132,7 +161,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </aside>
 
       {/* Main */}
-      <main style={{flex:1, overflow:'auto', minWidth:0}}>
+      <main style={{
+  flex:1, overflow:'auto', minWidth:0,
+  backgroundImage: `radial-gradient(circle, rgba(207,255,0,0.12) 1px, transparent 1px)`,
+  backgroundSize: '28px 28px',
+  backgroundColor: '#060606',
+}}>
         {children}
       </main>
     </div>

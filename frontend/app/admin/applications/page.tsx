@@ -50,6 +50,7 @@ export default function ApplicationsPage() {
   const [year,   setYear]   = useState('')
   const [search, setSearch] = useState('')
   const [page,   setPage]   = useState(0)
+  const [confirmAction, setConfirmAction] = useState<{id:string; name:string; action:'approved'|'rejected'}|null>(null)
   const LIMIT = 20
 
   const showToast = (msg: string, type: 'ok'|'err' = 'ok') => {
@@ -135,6 +136,23 @@ export default function ApplicationsPage() {
     if (selected.size === apps.length) setSelected(new Set())
     else setSelected(new Set(apps.map(a => a.id)))
   }
+  const exportCSV = () => {
+  const headers = ['Name','Email','Phone','Year','Section','Stream','T-Shirt','Status','Applied','Why Join']
+  const rows = apps.map(a => [
+    `${a.first_name} ${a.last_name}`,
+    a.email, a.phone,
+    a.year, a.section, a.stream,
+    a.tshirt_size, a.status,
+    new Date(a.created_at).toLocaleDateString('en-IN'),
+    `"${a.why_join.replace(/"/g,'""')}"`,
+  ])
+  const csv = [headers, ...rows].map(r => r.join(',')).join('\n')
+  const blob = new Blob([csv], {type:'text/csv'})
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url; a.download = `applications_${Date.now()}.csv`
+  a.click(); URL.revokeObjectURL(url)
+}
 
   return (
     <div style={{padding:'32px 36px'}}>
@@ -172,6 +190,10 @@ export default function ApplicationsPage() {
             </button>
           </div>
         )}
+        <button onClick={exportCSV}
+  style={{background:'transparent',border:'1px solid #1e1e1e',borderRadius:7,color:'#444',fontFamily:'var(--font-jetbrains)',fontSize:11,padding:'8px 14px',cursor:'none'}}>
+  Export CSV ↓
+</button>
       </div>
 
       {/* Filters */}
@@ -267,32 +289,28 @@ export default function ApplicationsPage() {
               {/* Action buttons */}
               <div style={{display:'flex',gap:5}}>
                 {app.status === 'pending' && (
-                  <>
-                    <button onClick={()=>doAction(app.id,'approved')}
-                      disabled={actionLoading===app.id}
-                      style={actionBtnStyle('#00e676')}>✓</button>
-                    <button onClick={()=>doAction(app.id,'rejected')}
-                      disabled={actionLoading===app.id}
-                      style={actionBtnStyle('#ff4040')}>✕</button>
-                  </>
-                )}
-                {app.status === 'approved' && (
-                  <button onClick={()=>sendInvite(app.id)}
-                    disabled={actionLoading===app.id+'_invite'}
-                    style={actionBtnStyle('#CFFF00','#000')}>
-                    {app.invite_sent_at ? 'Resend' : 'Invite'}
-                  </button>
-                )}
-                {app.status === 'approved' && (
-                  <button onClick={()=>doAction(app.id,'rejected')}
-                    disabled={actionLoading===app.id}
-                    style={actionBtnStyle('#383838')}>✕</button>
-                )}
-                {app.status === 'rejected' && (
-                  <button onClick={()=>doAction(app.id,'approved')}
-                    disabled={actionLoading===app.id}
-                    style={actionBtnStyle('#555')}>↩</button>
-                )}
+  <>
+    <button onClick={()=>setConfirmAction({id:app.id, name:`${app.first_name} ${app.last_name}`, action:'approved'})}
+      style={actionBtnStyle('#00e676')}>✓</button>
+    <button onClick={()=>setConfirmAction({id:app.id, name:`${app.first_name} ${app.last_name}`, action:'rejected'})}
+      style={actionBtnStyle('#ff4040')}>✕</button>
+  </>
+)}
+{app.status === 'approved' && (
+  <>
+    <button onClick={()=>sendInvite(app.id)}
+      disabled={actionLoading===app.id+'_invite'}
+      style={actionBtnStyle('#CFFF00','#000')}>
+      {app.invite_sent_at ? 'Resend' : 'Invite'}
+    </button>
+    <button onClick={()=>setConfirmAction({id:app.id, name:`${app.first_name} ${app.last_name}`, action:'rejected'})}
+      style={actionBtnStyle('#383838')}>✕</button>
+  </>
+)}
+{app.status === 'rejected' && (
+  <button onClick={()=>setConfirmAction({id:app.id, name:`${app.first_name} ${app.last_name}`, action:'approved'})}
+    style={actionBtnStyle('#555')}>↩</button>
+)}
               </div>
             </div>
 
@@ -342,7 +360,37 @@ export default function ApplicationsPage() {
           </div>
         </div>
       )}
+      {/* Confirm dialog */}
+{confirmAction && (
+  <div style={{position:'fixed',inset:0,zIndex:9999,background:'rgba(0,0,0,0.85)',backdropFilter:'blur(12px)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+    <div style={{background:'#0f0f0f',border:'1px solid #222',borderRadius:16,padding:28,maxWidth:380,width:'100%',margin:'0 24px'}}>
+      <div style={{fontFamily:'var(--font-syne)',fontWeight:800,color:'#fff',fontSize:16,marginBottom:8}}>
+        {confirmAction.action === 'approved' ? 'Approve' : 'Reject'} applicant?
+      </div>
+      <div style={{fontFamily:'var(--font-jetbrains)',fontSize:12,color:'#555',marginBottom:24}}>
+        <span style={{color:confirmAction.action==='approved'?'#00e676':'#ff4040'}}>{confirmAction.name}</span> will be marked as <span style={{color:confirmAction.action==='approved'?'#00e676':'#ff4040'}}>{confirmAction.action}</span>.
+      </div>
+      <div style={{display:'flex',gap:10}}>
+        <button
+          onClick={async()=>{await doAction(confirmAction.id, confirmAction.action);setConfirmAction(null)}}
+          style={{
+            flex:1,padding:'10px',borderRadius:8,border:'none',cursor:'none',
+            fontFamily:'var(--font-syne)',fontWeight:800,fontSize:13,
+            background:confirmAction.action==='approved'?'#00e676':'#ff4040',
+            color:'#000',
+          }}>
+          Confirm
+        </button>
+        <button onClick={()=>setConfirmAction(null)}
+          style={{flex:1,padding:'10px',borderRadius:8,border:'1px solid #222',background:'transparent',cursor:'none',fontFamily:'var(--font-jetbrains)',fontSize:12,color:'#555'}}>
+          Cancel
+        </button>
+      </div>
     </div>
+  </div>
+)}
+    </div>
+    
   )
 }
 
@@ -358,6 +406,7 @@ function DetailRow({ label, value, link }: { label:string; value:string; link?:s
       ) : (
         <span style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#666'}}>{value}</span>
       )}
+      
     </div>
   )
 }

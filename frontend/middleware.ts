@@ -1,43 +1,59 @@
-import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
+import { NextResponse, type NextRequest } from 'next/server'
 
-const ADMIN_EMAILS = [
-  'chathuryastudentdevclub@gmail.com',
-]
+const ADMIN_EMAILS = ['chathuryastudentdevclub@gmail.com']
 
-export async function middleware(req: NextRequest) {
-  const res = NextResponse.next()
+export async function middleware(request: NextRequest) {
+  // Don't protect the login page
+  if (request.nextUrl.pathname === '/admin/login') {
+    return NextResponse.next()
+  }
 
-  if (!req.nextUrl.pathname.startsWith('/admin')) return res
-  if (req.nextUrl.pathname === '/admin/login') return res
+  // Only run on /admin routes
+  if (!request.nextUrl.pathname.startsWith('/admin')) {
+    return NextResponse.next()
+  }
+
+  let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll: () => req.cookies.getAll(),
-        setAll: (cookiesToSet) => {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            res.cookies.set(name, value, options)
-          })
+        getAll() {
+          return request.cookies.getAll()
         },
+       setAll(cookiesToSet) {
+    cookiesToSet.forEach(({ name, value, options }) =>
+      request.cookies.set(name, value)
+    )
+    supabaseResponse = NextResponse.next({
+      request,
+    })
+    cookiesToSet.forEach(({ name, value, options }) =>
+      supabaseResponse.cookies.set(name, value, options)
+    )
+  },
       },
     }
   )
 
-  const { data: { session } } = await supabase.auth.getSession()
-  const user = session?.user
+  const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
-    return NextResponse.redirect(new URL('/admin/login', req.url))
+    const url = request.nextUrl.clone()
+    url.pathname = '/admin/login'
+    return NextResponse.redirect(url)
   }
 
   if (!ADMIN_EMAILS.includes(user.email ?? '')) {
-    return NextResponse.redirect(new URL('/', req.url))
+    const url = request.nextUrl.clone()
+    url.pathname = '/'
+    return NextResponse.redirect(url)
   }
 
-  return res
+  return supabaseResponse
 }
 
 export const config = {

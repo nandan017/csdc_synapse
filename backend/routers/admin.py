@@ -115,7 +115,7 @@ async def send_invite(app_id: str):
         "application_id": app_id,
         "token": token,
         "expires_at": expires,
-    }).execute()
+    }, on_conflict="application_id").execute()
 
     # Update application
     sb.table("applications").update({

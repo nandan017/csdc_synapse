@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from core.config import settings
 from routers import register
-from routers import register, admin
+from routers import register, admin, onboard
 
 app = FastAPI(
     title="CSDC Synapse API",
@@ -33,3 +33,4 @@ async def health():
     return {"status": "ok", "service": "csdc-synapse-api"}
 
 app.include_router(admin.router) 
+app.include_router(onboard.router)

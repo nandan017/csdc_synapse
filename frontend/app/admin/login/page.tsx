@@ -11,30 +11,28 @@ export default function AdminLogin() {
   const [error,    setError]    = useState('')
   const router = useRouter()
 
-  const handleLogin = async (e: React.FormEvent) => {
-  e.preventDefault()
-  setLoading(true)
-  setError('')
+ const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
 
-  const supabase = createClient()
-  const { error: err } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  })
+    const supabase = createClient()
+    const { error: err } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
 
-  if (err) {
-    setError(err.message)
-    setLoading(false)
-    return
+    if (err) {
+      setError(err.message)
+      setLoading(false)
+      return
+    }
+
+    // Full reload forces middleware to re-read cookies
+    // Small delay to ensure cookies are fully set before redirect
+    await new Promise(resolve => setTimeout(resolve, 100))
+    window.location.href = '/admin'
   }
-
-  // 🧠 give time for cookie to be set
-  setTimeout(() => {
-    router.push('/admin')
-    setLoading(false)
-    router.refresh()
-  }, 500)
-}
 
   return (
     <div style={{
