@@ -297,8 +297,8 @@ function HeroCanvas() {
       ghostImg: HTMLImageElement
     }
 
-    const pacImg   = new Image(); pacImg.src   = '/pacman/pacman.png'
-    const ghostImg = new Image(); ghostImg.src = '/pacman/ghost.png'
+    const pacImg   = new Image(); pacImg.src   = 'https://ytohucehzdlsfpfxzvkj.supabase.co/storage/v1/object/public/media/pacman/pacman.png'
+    const ghostImg = new Image(); ghostImg.src = 'https://ytohucehzdlsfpfxzvkj.supabase.co/storage/v1/object/public/media//pacman/ghost.png'
 
     // pair state: ghost leads, pac follows
     type Pair = { ghostY: number; pacY: number; colIdx: number; speed: number }

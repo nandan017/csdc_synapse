@@ -27,7 +27,7 @@ interface FormErrors {
 }
 
 const PLAYLIST = [
-  { title: 'Kids', artist: 'Kyle Dixon & Michael Stein', src: '/audio/kids.mp3' },
+  { title: 'Kids', artist: 'Kyle Dixon & Michael Stein', src: 'https://ytohucehzdlsfpfxzvkj.supabase.co/storage/v1/object/public/media/audio/kids.mp3' },
   // Add more tracks here later:
   // { title: 'Clair de Lune', artist: 'Debussy', src: '/audio/clair.mp3' },
   // { title: 'Song Title', artist: 'Artist', src: '/audio/file.mp3' },
@@ -410,7 +410,7 @@ useEffect(() => {
             <p className="font-mono text-[11px] text-text-dim mb-4">// exclusive member tee — your name on the back</p>
             <div className="rounded-xl overflow-hidden bg-black border border-border" style={{aspectRatio:'2/3'}}>
               <video autoPlay loop muted playsInline className="w-full h-full object-cover">
-                <source src="/tshirt-preview.mp4" type="video/mp4" />
+                <source src="https://ytohucehzdlsfpfxzvkj.supabase.co/storage/v1/object/public/media/tshirt-preview.MP4" type="video/mp4" />
               </video>
             </div>
           </div>

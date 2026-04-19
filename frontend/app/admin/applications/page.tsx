@@ -1,5 +1,5 @@
 'use client'
-
+import { Suspense } from 'react'
 import { useEffect, useState, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
 
@@ -34,7 +34,7 @@ const STATUS_BG: Record<string, string> = {
   rejected: 'rgba(255,64,64,0.08)',
 }
 
-export default function ApplicationsPage() {
+function ApplicationsContent() {
   const searchParams = useSearchParams()
   const [apps, setApps]           = useState<Application[]>([])
   const [total, setTotal]         = useState(0)
@@ -107,12 +107,12 @@ export default function ApplicationsPage() {
   }
 
   const bulkAction = async (action: 'approved'|'rejected') => {
-    for (const id of selected) await doAction(id, action)
+    for (const id of Array.from(selected)) await doAction(id, action)
     setSelected(new Set())
   }
 
   const bulkInvite = async () => {
-    const ids = [...selected]
+    const ids = Array.from(selected)
     setActionLoading('bulk')
     const res = await fetch('/api/backend/admin/applications/bulk-invite', {
       method:'POST',
@@ -440,4 +440,12 @@ const pageBtnStyle: React.CSSProperties = {
   borderRadius:7, color:'#555',
   fontFamily:'var(--font-jetbrains)', fontSize:11,
   padding:'7px 14px', cursor:'none',
+}
+
+export default function ApplicationsPage() {
+  return (
+    <Suspense fallback={<div style={{padding:40,color:'#2a2a2a',fontFamily:'var(--font-jetbrains)',fontSize:12}}>Loading...</div>}>
+      <ApplicationsContent />
+    </Suspense>
+  )
 }

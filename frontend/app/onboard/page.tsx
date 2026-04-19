@@ -1,5 +1,5 @@
 'use client'
-
+import { Suspense } from 'react'
 import { useEffect, useState, useRef } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
@@ -28,7 +28,7 @@ const SKILL_SUGGESTIONS = [
 ]
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
-export default function OnboardPage() {
+function OnboardContent() {
   const searchParams = useSearchParams()
   const router       = useRouter()
   const token        = searchParams.get('token') ?? ''
@@ -576,4 +576,13 @@ const inputStyle: React.CSSProperties = {
   color:'#222', fontFamily:'var(--font-dm-sans)', fontSize:13,
   padding:'11px 14px', outline:'none', boxSizing:'border-box',
   transition:'border-color .2s',
+}
+
+
+export default function OnboardPage() {
+  return (
+    <Suspense fallback={<div style={{minHeight:'100vh',background:'#000'}} />}>
+      <OnboardContent />
+    </Suspense>
+  )
 }
