@@ -231,6 +231,7 @@ async def send_application_confirmation(
         },
         subject=f"Hey {first_name}, your Chathurya application is in ⚡",
         html_content=_build_confirmation_html(first_name),
+        headers={"X-Mailin-TrackClicks": "0"},
     )
 
     try:

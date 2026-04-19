@@ -4,7 +4,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
 
-    const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000'
+    const backendUrl = process.env.BACKEND_URL || 'https://csdcsynapse-production.up.railway.app'
     const response = await fetch(`${backendUrl}/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
