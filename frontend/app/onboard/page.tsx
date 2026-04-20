@@ -68,6 +68,18 @@ function OnboardContent() {
       .catch(() => { setInvalidMsg('Could not verify your invite. Try again.'); setStep('invalid') })
   }, [token])
 
+  const dotRef = useRef<HTMLDivElement>(null)
+    useEffect(() => {
+      const onMove = (e: MouseEvent) => {
+        if (dotRef.current) {
+          dotRef.current.style.left = e.clientX + 'px'
+          dotRef.current.style.top = e.clientY + 'px'
+        }
+      }
+      window.addEventListener('mousemove', onMove)
+      return () => window.removeEventListener('mousemove', onMove)
+    }, [])  
+
   /* ── Skills ── */
   const addSkill = (s: string) => {
     const trimmed = s.trim()
@@ -137,18 +149,26 @@ function OnboardContent() {
   /* ═════════════════════════════════════════════════════════════════════════
      RENDER
   ═════════════════════════════════════════════════════════════════════════ */
+  
   return (
     <div style={{
-      minHeight:'100vh', background:'#f8f8f6',
+      minHeight:'100vh', background:'#080808', cursor:'none',
       display:'flex', flexDirection:'column',
       alignItems:'center', justifyContent:'center',
       fontFamily:'var(--font-dm-sans)', padding:'40px 20px',
     }}>
 
+    <div ref={dotRef} style={{
+  position:'fixed', zIndex:9999, pointerEvents:'none',
+  width:6, height:6, borderRadius:'50%', background:'#CFFF00',
+  transform:'translate(-50%,-50%)', mixBlendMode:'screen',
+}} />
+
+
       {/* Top bar */}
       <div style={{
         position:'fixed', top:0, left:0, right:0,
-        height:3, background:'#e8e8e8', zIndex:100,
+        height:3, background:'#1e1e1e', zIndex:100,
       }}>
         <div style={{
           height:'100%', background:'#CFFF00',
@@ -163,10 +183,10 @@ function OnboardContent() {
         <img src="/logo.png" alt="Chathurya"
           style={{width:36,height:36,objectFit:'contain',marginBottom:10,
             filter:'drop-shadow(0 0 8px rgba(207,255,0,0.35))'}} />
-        <div style={{fontFamily:'var(--font-syne)',fontWeight:800,color:'#111',fontSize:16,letterSpacing:'-.02em'}}>
+        <div style={{fontFamily:'var(--font-syne)',fontWeight:800,color:'#fff',fontSize:16,letterSpacing:'-.02em'}}>
           Chathurya
         </div>
-        <div style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#aaa',letterSpacing:'.1em',marginTop:2}}>
+        <div style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#444',letterSpacing:'.1em',marginTop:2}}>
           Member Onboarding
         </div>
       </div>
@@ -178,7 +198,7 @@ function OnboardContent() {
             <div style={{fontFamily:'var(--font-jetbrains)',fontSize:12,color:'#aaa',letterSpacing:'.08em'}}>
               Verifying your invite...
             </div>
-            <div style={{marginTop:16,width:32,height:32,border:'2px solid #e8e8e8',borderTopColor:'#CFFF00',borderRadius:'50%',animation:'spin .6s linear infinite',margin:'16px auto 0'}} />
+            <div style={{marginTop:16,width:32,height:32,border:'2px solid #1e1e1e',borderTopColor:'#CFFF00',borderRadius:'50%',animation:'spin .6s linear infinite',margin:'16px auto 0'}} />
           </div>
           <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
         </Card>
@@ -189,10 +209,10 @@ function OnboardContent() {
         <Card>
           <div style={{textAlign:'center',padding:'8px 0'}}>
             <div style={{fontSize:32,marginBottom:16}}>⚠️</div>
-            <h2 style={{fontFamily:'var(--font-syne)',fontWeight:800,color:'#111',fontSize:20,marginBottom:12,letterSpacing:'-.03em'}}>
+            <h2 style={{fontFamily:'var(--font-syne)',fontWeight:800,color:'#fff',fontSize:20,marginBottom:12,letterSpacing:'-.03em'}}>
               Invalid Invite
             </h2>
-            <p style={{color:'#888',fontSize:14,lineHeight:1.7}}>{invalidMsg}</p>
+            <p style={{color:'#555',fontSize:14,lineHeight:1.7}}>{invalidMsg}</p>
             <p style={{color:'#bbb',fontSize:12,marginTop:12,fontFamily:'var(--font-jetbrains)'}}>
               Contact us at chathuryastudentdevclub@gmail.com
             </p>
@@ -211,10 +231,10 @@ function OnboardContent() {
 
           {/* Pre-filled read-only info */}
           <div style={{
-            background:'#f3f3f1', borderRadius:10,
+            background:'#0a0a0a', borderRadius:10, border:'1px solid #1e1e1e',
             padding:'14px 16px', marginBottom:24,
           }}>
-            <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#aaa',letterSpacing:'.1em',textTransform:'uppercase',marginBottom:10}}>
+            <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#444',letterSpacing:'.1em',textTransform:'uppercase',marginBottom:10}}>
               From your application
             </div>
             <div className="onboard-info-grid" style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'6px 20px'}}>
@@ -226,8 +246,8 @@ function OnboardContent() {
                 ['T-Shirt', appData.tshirt_size],
               ].map(([l,v]) => (
                 <div key={l}>
-                  <span style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#bbb',letterSpacing:'.06em',textTransform:'uppercase'}}>{l} </span>
-                  <span style={{fontSize:13,color:'#444',fontWeight:500}}>{v}</span>
+                  <span style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#555',letterSpacing:'.06em',textTransform:'uppercase'}}>{l} </span>
+                  <span style={{fontSize:13,color:'#ccc',fontWeight:500}}>{v}</span>
                 </div>
               ))}
             </div>
@@ -235,7 +255,7 @@ function OnboardContent() {
 
           {/* Bio */}
           <div style={{marginBottom:18}}>
-            <Label>Bio <span style={{color:'#ccc',fontWeight:400}}>(optional)</span></Label>
+            <Label>Bio <span style={{color:'#383838',fontWeight:400}}>(optional)</span></Label>
             <textarea
               value={bio}
               onChange={e => setBio(e.target.value)}
@@ -258,7 +278,7 @@ function OnboardContent() {
                   display:'inline-flex',alignItems:'center',gap:5,
                   background:'rgba(207,255,0,0.12)',border:'1px solid rgba(207,255,0,0.3)',
                   borderRadius:99,padding:'4px 10px',
-                  fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#555',
+                  fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#ccc',
                 }}>
                   {s}
                   <button onClick={()=>removeSkill(s)} style={{background:'none',border:'none',cursor:'pointer',color:'#aaa',fontSize:12,lineHeight:1,padding:0}}>×</button>
@@ -279,12 +299,12 @@ function OnboardContent() {
               {SKILL_SUGGESTIONS.filter(s => !skills.includes(s)).slice(0,8).map(s => (
                 <button key={s} onClick={() => addSkill(s)}
                   style={{
-                    background:'transparent',border:'1px solid #e8e8e8',borderRadius:99,
+                    background:'transparent',border:'1px solid #1e1e1e',borderRadius:99,
                     padding:'3px 10px',fontFamily:'var(--font-jetbrains)',fontSize:10,
-                    color:'#bbb',cursor:'pointer',transition:'all .15s',
+                    color:'#555',cursor:'pointer',transition:'all .15s',
                   }}
-                  onMouseEnter={e=>{e.currentTarget.style.borderColor='#CFFF00';e.currentTarget.style.color='#555'}}
-                  onMouseLeave={e=>{e.currentTarget.style.borderColor='#e8e8e8';e.currentTarget.style.color='#bbb'}}>
+                  onMouseEnter={e=>{e.currentTarget.style.borderColor='#CFFF00';e.currentTarget.style.color='#CFFF00'}}
+                  onMouseLeave={e=>{e.currentTarget.style.borderColor='#1e1e1e';e.currentTarget.style.color='#555'}}>
                   + {s}
                 </button>
               ))}
@@ -309,10 +329,10 @@ function OnboardContent() {
               <button key={mode} onClick={() => setAvatarMode(mode)}
                 style={{
                   flex:1, padding:'12px', borderRadius:10, cursor:'pointer',
-                  border: avatarMode===mode ? '2px solid #CFFF00' : '1px solid #e8e8e8',
-                  background: avatarMode===mode ? 'rgba(207,255,0,0.06)' : '#fff',
+                  border: avatarMode===mode ? '2px solid #CFFF00' : '1px solid #1e1e1e',
+                  background: avatarMode===mode ? 'rgba(207,255,0,0.06)' : '#0a0a0a',
                   fontFamily:'var(--font-jetbrains)', fontSize:11,
-                  color: avatarMode===mode ? '#555' : '#aaa',
+                  color: avatarMode===mode ? '#CFFF00' : '#555',
                   transition:'all .2s',
                 }}>
                 {mode === 'generated' ? '✦ Generated' : '↑ Upload photo'}
@@ -346,13 +366,13 @@ function OnboardContent() {
               <button onClick={() => fileRef.current?.click()}
                 disabled={uploading}
                 style={{
-                  background:'transparent', border:'1px solid #e8e8e8',
+                  background:'transparent', border:'1px solid #1e1e1e',
                   borderRadius:8, padding:'9px 20px', cursor:'pointer',
-                  fontFamily:'var(--font-jetbrains)', fontSize:11, color:'#888',
+                  fontFamily:'var(--font-jetbrains)', fontSize:11, color:'#555',
                   transition:'all .2s',
                 }}
-                onMouseEnter={e=>{e.currentTarget.style.borderColor='#CFFF00';e.currentTarget.style.color='#555'}}
-                onMouseLeave={e=>{e.currentTarget.style.borderColor='#e8e8e8';e.currentTarget.style.color='#888'}}>
+                onMouseEnter={e=>{e.currentTarget.style.borderColor='#CFFF00';e.currentTarget.style.color='#CFFF00'}}
+                onMouseLeave={e=>{e.currentTarget.style.borderColor='#1e1e1e';e.currentTarget.style.color='#555'}}>
                 {uploading ? 'Uploading...' : avatarUrl ? 'Change photo' : 'Choose photo'}
               </button>
               {avatarUrl && (
@@ -414,7 +434,7 @@ function OnboardContent() {
 
           {/* Summary */}
           <div style={{
-            background:'#f8f8f6',borderRadius:10,
+            background:'#0a0a0a',borderRadius:10, border:'1px solid #1e1e1e',
             padding:'14px 16px',marginBottom:24,
             fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#888',
           }}>
@@ -436,7 +456,7 @@ function OnboardContent() {
       {step === 'submitting' && (
         <Card>
           <div style={{textAlign:'center',padding:'20px 0'}}>
-            <div style={{width:40,height:40,border:'2px solid #e8e8e8',borderTopColor:'#CFFF00',borderRadius:'50%',animation:'spin .6s linear infinite',margin:'0 auto 20px'}} />
+            <div style={{width:40,height:40,border:'2px solid #1e1e1e',borderTopColor:'#CFFF00',borderRadius:'50%',animation:'spin .6s linear infinite',margin:'0 auto 20px'}} />
             <div style={{fontFamily:'var(--font-syne)',fontWeight:700,color:'#111',fontSize:16}}>
               Setting up your profile...
             </div>
@@ -463,15 +483,15 @@ function OnboardContent() {
               {initials}
             </div>
 
-            <h2 style={{fontFamily:'var(--font-syne)',fontWeight:800,color:'#111',fontSize:22,letterSpacing:'-.03em',marginBottom:8}}>
+            <h2 style={{fontFamily:'var(--font-syne)',fontWeight:800,color:'#fff',fontSize:22,letterSpacing:'-.03em',marginBottom:8}}>
               You're officially in. ⚡
             </h2>
-            <p style={{color:'#888',fontSize:14,lineHeight:1.75,maxWidth:320,margin:'0 auto 24px'}}>
+            <p style={{color:'#555',fontSize:14,lineHeight:1.75,maxWidth:320,margin:'0 auto 24px'}}>
               Welcome to Chathurya, {appData.first_name}. Your member profile is ready. Your NFC card will be issued at the next workshop.
             </p>
 
             <div style={{
-              background:'#f3f3f1',borderRadius:10,
+              background:'#0a0a0a',borderRadius:10, border:'1px solid #1e1e1e',
               padding:'12px 16px',marginBottom:24,
               fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#888',
               display:'flex',flexDirection:'column',gap:4,
@@ -503,10 +523,10 @@ function Card({ children }: { children: React.ReactNode }) {
   return (
     <div style={{
       width:'100%', maxWidth:480,
-      background:'#fff', borderRadius:18,
-      border:'1px solid #efefef',
+      background:'#0f0f0f', borderRadius:18,
+      border:'1px solid #1e1e1e',
       padding:32,
-      boxShadow:'0 2px 24px rgba(0,0,0,0.06)',
+      boxShadow:'0 2px 24px rgba(0,0,0,0.3)',
     }}>
       {children}
     </div>
@@ -520,10 +540,10 @@ function StepHeader({ step, total, title, sub }:
       <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#CFFF00',letterSpacing:'.12em',textTransform:'uppercase',marginBottom:8}}>
         Step {step} of {total}
       </div>
-      <h2 style={{fontFamily:'var(--font-syne)',fontWeight:800,color:'#111',fontSize:20,letterSpacing:'-.03em',margin:'0 0 6px'}}>
+      <h2 style={{fontFamily:'var(--font-syne)',fontWeight:800,color:'#fff',fontSize:20,letterSpacing:'-.03em',margin:'0 0 6px'}}>
         {title}
       </h2>
-      <p style={{color:'#aaa',fontSize:13,margin:0,lineHeight:1.6}}>{sub}</p>
+      <p style={{color:'#555',fontSize:13,margin:0,lineHeight:1.6}}>{sub}</p>
     </div>
   )
 }
@@ -533,7 +553,7 @@ function Label({ children }: { children: React.ReactNode }) {
     <label style={{
       display:'block',
       fontFamily:'var(--font-jetbrains)',fontSize:10,
-      color:'#888',letterSpacing:'.08em',textTransform:'uppercase',marginBottom:7,
+      color:'#555',letterSpacing:'.08em',textTransform:'uppercase',marginBottom:7,
     }}>
       {children}
     </label>
@@ -559,21 +579,21 @@ function SecondaryBtn({ onClick, children }: { onClick:()=>void; children:React.
   return (
     <button onClick={onClick} style={{
       padding:'12px 18px', background:'transparent',
-      border:'1px solid #e8e8e8', borderRadius:10,
-      fontFamily:'var(--font-jetbrains)', fontSize:12, color:'#aaa',
+      border:'1px solid #1e1e1e', borderRadius:10,
+      fontFamily:'var(--font-jetbrains)', fontSize:12, color:'#555',
       cursor:'pointer', transition:'all .2s', whiteSpace:'nowrap',
     }}
-    onMouseEnter={e=>{e.currentTarget.style.borderColor='#ccc';e.currentTarget.style.color='#555'}}
-    onMouseLeave={e=>{e.currentTarget.style.borderColor='#e8e8e8';e.currentTarget.style.color='#aaa'}}>
+    onMouseEnter={e=>{e.currentTarget.style.borderColor='#CFFF00';e.currentTarget.style.color='#CFFF00'}}
+    onMouseLeave={e=>{e.currentTarget.style.borderColor='#1e1e1e';e.currentTarget.style.color='#555'}}>
       {children}
     </button>
   )
 }
 
 const inputStyle: React.CSSProperties = {
-  width:'100%', background:'#fafaf8',
-  border:'1px solid #e8e8e8', borderRadius:8,
-  color:'#222', fontFamily:'var(--font-dm-sans)', fontSize:13,
+  width:'100%', background:'#0a0a0a',
+  border:'1px solid #1e1e1e', borderRadius:8,
+  color:'#e0e0e0', fontFamily:'var(--font-dm-sans)', fontSize:13,
   padding:'11px 14px', outline:'none', boxSizing:'border-box',
   transition:'border-color .2s',
 }

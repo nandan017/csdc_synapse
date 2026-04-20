@@ -373,3 +373,6 @@ create policy "own_votes" on votes
   for select using (
     member_id = (select id from members where auth_user_id = auth.uid())
   );
+
+ALTER TABLE members ADD COLUMN stream TEXT DEFAULT 'BCA';
+
