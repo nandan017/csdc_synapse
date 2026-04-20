@@ -1,0 +1,837 @@
+'use client'
+
+import { useEffect, useRef, useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase'
+import Link from 'next/link'
+
+/* ── Types ───────────────────────────────────────────────────────────────── */
+interface Member {
+  id: string
+  first_name: string
+  last_name: string
+  email: string
+  year: number
+  section: string
+  stream: string
+  bio: string
+  github: string
+  linkedin: string
+  skills: string[]
+  avatar_url: string | null
+  xp: number
+  role: string
+  is_alumni: boolean
+  encrypted_uid: string | null
+  member_archetype: string | null
+  batch_year: number
+  created_at: string
+}
+
+interface Badge {
+  badge_definitions: {
+    slug: string
+    name: string
+    description: string
+    icon: string
+    xp_threshold: number | null
+  }
+  awarded_at: string
+}
+
+interface AttendanceRecord {
+  tapped_at: string
+  is_late: boolean
+  xp_awarded: number
+  workshops: { title: string }
+}
+
+/* ── XP milestones ───────────────────────────────────────────────────────── */
+const MILESTONES = [
+  { xp: 100,  label: 'Century',      icon: '💯' },
+  { xp: 250,  label: 'Rising',       icon: '📈' },
+  { xp: 500,  label: 'Achiever',     icon: '🏆' },
+  { xp: 1000, label: 'Legend',       icon: '👑' },
+  { xp: 2500, label: 'Mythic',       icon: '⚡' },
+]
+
+function getNextMilestone(xp: number) {
+  return MILESTONES.find(m => m.xp > xp) ?? MILESTONES[MILESTONES.length - 1]
+}
+
+function getPrevMilestone(xp: number) {
+  const idx = MILESTONES.findIndex(m => m.xp > xp)
+  return idx > 0 ? MILESTONES[idx - 1] : { xp: 0, label: 'Start', icon: '🌱' }
+}
+
+/* ── Counter hook ────────────────────────────────────────────────────────── */
+function useCounter(target: number, duration = 1200, started = false) {
+  const [val, setVal] = useState(0)
+  useEffect(() => {
+    if (!started || target === 0) return
+    let start: number | null = null
+    const tick = (now: number) => {
+      if (!start) start = now
+      const p = Math.min((now - start) / duration, 1)
+      const eased = 1 - Math.pow(1 - p, 3)
+      setVal(Math.floor(eased * target))
+      if (p < 1) requestAnimationFrame(tick)
+    }
+    requestAnimationFrame(tick)
+  }, [target, duration, started])
+  return val
+}
+
+/* ── Orbital ring canvas ─────────────────────────────────────────────────── */
+function OrbitalRing({ xp, maxXp, size = 160 }: { xp: number; maxXp: number; size?: number }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const animRef   = useRef<number>(0)
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')!
+    const dpr = window.devicePixelRatio || 1
+    canvas.width  = size * dpr
+    canvas.height = size * dpr
+    ctx.scale(dpr, dpr)
+
+    const cx = size / 2
+    const cy = size / 2
+    const r1 = size / 2 - 6   // outer track
+    const r2 = size / 2 - 18  // inner track
+    let angle = -Math.PI / 2
+    let xpAngle = -Math.PI / 2
+    const targetXpAngle = -Math.PI / 2 + (Math.PI * 2 * Math.min(xp / maxXp, 1))
+
+    const draw = () => {
+      ctx.clearRect(0, 0, size, size)
+
+      // Outer track
+      ctx.beginPath()
+      ctx.arc(cx, cy, r1, 0, Math.PI * 2)
+      ctx.strokeStyle = 'rgba(207,255,0,0.08)'
+      ctx.lineWidth = 1
+      ctx.stroke()
+
+      // Inner track
+      ctx.beginPath()
+      ctx.arc(cx, cy, r2, 0, Math.PI * 2)
+      ctx.strokeStyle = 'rgba(207,255,0,0.05)'
+      ctx.lineWidth = 1
+      ctx.stroke()
+
+      // Rotating scanner line
+      angle += 0.012
+      const sx = cx + r1 * Math.cos(angle)
+      const sy = cy + r1 * Math.sin(angle)
+      const grad = ctx.createLinearGradient(cx, cy, sx, sy)
+      grad.addColorStop(0, 'rgba(207,255,0,0)')
+      grad.addColorStop(1, 'rgba(207,255,0,0.35)')
+      ctx.beginPath()
+      ctx.moveTo(cx, cy)
+      ctx.lineTo(sx, sy)
+      ctx.strokeStyle = grad
+      ctx.lineWidth = 1.5
+      ctx.stroke()
+
+      // Scanner dot
+      ctx.beginPath()
+      ctx.arc(sx, sy, 3, 0, Math.PI * 2)
+      ctx.fillStyle = '#CFFF00'
+      ctx.shadowColor = '#CFFF00'
+      ctx.shadowBlur = 8
+      ctx.fill()
+      ctx.shadowBlur = 0
+
+      // XP arc progress
+      xpAngle += (targetXpAngle - xpAngle) * 0.04
+      if (xpAngle > -Math.PI / 2) {
+        ctx.beginPath()
+        ctx.arc(cx, cy, r2, -Math.PI / 2, xpAngle)
+        ctx.strokeStyle = '#CFFF00'
+        ctx.lineWidth = 2.5
+        ctx.lineCap = 'round'
+        ctx.stroke()
+        ctx.lineCap = 'butt'
+
+        // XP arc glow
+        ctx.beginPath()
+        ctx.arc(cx, cy, r2, -Math.PI / 2, xpAngle)
+        ctx.strokeStyle = 'rgba(207,255,0,0.2)'
+        ctx.lineWidth = 6
+        ctx.stroke()
+      }
+
+      // Corner tick marks
+      for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * Math.PI * 2
+        const ox = cx + (r1 + 4) * Math.cos(a)
+        const oy = cy + (r1 + 4) * Math.sin(a)
+        const ix = cx + (r1 - 4) * Math.cos(a)
+        const iy = cy + (r1 - 4) * Math.sin(a)
+        ctx.beginPath()
+        ctx.moveTo(ox, oy)
+        ctx.lineTo(ix, iy)
+        ctx.strokeStyle = 'rgba(207,255,0,0.2)'
+        ctx.lineWidth = 1
+        ctx.stroke()
+      }
+
+      animRef.current = requestAnimationFrame(draw)
+    }
+    draw()
+    return () => cancelAnimationFrame(animRef.current)
+  }, [xp, maxXp, size])
+
+  return (
+    <canvas ref={canvasRef}
+      style={{ width: size, height: size, position: 'absolute', inset: 0 }}
+    />
+  )
+}
+
+/* ── UID scramble effect ─────────────────────────────────────────────────── */
+function ScrambleUID({ uid }: { uid: string }) {
+  const [display, setDisplay] = useState('████████████████████████')
+  const chars = 'ABCDEF0123456789'
+
+  useEffect(() => {
+    if (!uid) return
+    const short = uid.slice(0, 24).toUpperCase()
+    let iter = 0
+    const iv = setInterval(() => {
+      setDisplay(
+        short.split('').map((c, i) =>
+          i < iter ? c : chars[Math.floor(Math.random() * chars.length)]
+        ).join('')
+      )
+      iter += 0.5
+      if (iter >= short.length) clearInterval(iv)
+    }, 40)
+    return () => clearInterval(iv)
+  }, [uid])
+
+  return <span>{display}</span>
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MAIN COMPONENT
+═══════════════════════════════════════════════════════════════════════════ */
+export default function Dashboard() {
+  const router = useRouter()
+
+  const [member,     setMember]     = useState<Member | null>(null)
+  const [badges,     setBadges]     = useState<Badge[]>([])
+  const [attendance, setAttendance] = useState<AttendanceRecord[]>([])
+  const [loading,    setLoading]    = useState(true)
+  const [booting,    setBooting]    = useState(true)
+  const [bootLine,   setBootLine]   = useState(0)
+  const [revealed,   setRevealed]   = useState(false)
+
+  const BOOT_LINES = [
+    '> Initialising CSDC Synapse...',
+    '> Authenticating member identity...',
+    '> Fetching NFC profile...',
+    '> Decrypting UID...',
+    '> Loading engagement data...',
+    '> All systems nominal.',
+  ]
+
+  /* ── Boot sequence ── */
+  useEffect(() => {
+    let i = 0
+    const iv = setInterval(() => {
+      i++
+      setBootLine(i)
+      if (i >= BOOT_LINES.length) {
+        clearInterval(iv)
+        setTimeout(() => { setBooting(false); setTimeout(() => setRevealed(true), 100) }, 400)
+      }
+    }, 320)
+    return () => clearInterval(iv)
+  }, [])
+
+  /* ── Fetch data ── */
+  useEffect(() => {
+    const load = async () => {
+      const sb = createClient()
+      const { data: { user } } = await sb.auth.getUser()
+      if (!user) { router.push('/admin/login'); return }
+
+      // Get member
+      const { data: m } = await sb
+        .from('members')
+        .select('*')
+        .eq('auth_user_id', user.id)
+        .single()
+
+      if (!m) { router.push('/onboard'); return }
+      setMember(m)
+
+      // Get badges
+      const { data: b } = await sb
+        .from('member_badges')
+        .select('awarded_at, badge_definitions(slug,name,description,icon,xp_threshold)')
+        .eq('member_id', m.id)
+        .order('awarded_at', { ascending: false })
+
+      setBadges((b as any) || [])
+
+      // Get attendance
+      const { data: a } = await sb
+        .from('attendance')
+        .select('tapped_at, is_late, xp_awarded, workshops(title)')
+        .eq('member_id', m.id)
+        .order('tapped_at', { ascending: false })
+        .limit(5)
+
+      setAttendance((a as any) || [])
+      setLoading(false)
+    }
+    load()
+  }, [router])
+
+  const handleLogout = async () => {
+    await createClient().auth.signOut()
+    router.push('/')
+  }
+
+  /* ── Derived ── */
+  const next     = member ? getNextMilestone(member.xp) : MILESTONES[0]
+  const prev     = member ? getPrevMilestone(member.xp) : { xp: 0 }
+  const xpPct    = member ? Math.round(((member.xp - prev.xp) / (next.xp - prev.xp)) * 100) : 0
+  const initials = member ? `${member.first_name[0]}${member.last_name[0]}`.toUpperCase() : '??'
+  const xpCount  = useCounter(member?.xp ?? 0, 1400, revealed)
+
+  /* ── Boot screen ── */
+  if (booting || loading) {
+    return (
+      <div style={{
+        minHeight:'100vh', background:'#080808',
+        display:'flex', flexDirection:'column',
+        alignItems:'center', justifyContent:'center',
+        fontFamily:'var(--font-jetbrains)',
+      }}>
+        <style>{`
+          @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+          body { background:#080808; cursor:none; }
+        `}</style>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo.png" alt="" style={{width:36,height:36,objectFit:'contain',marginBottom:28,
+          filter:'drop-shadow(0 0 12px rgba(207,255,0,0.6))'}} />
+        <div style={{width:320}}>
+          {BOOT_LINES.slice(0, bootLine).map((line, i) => (
+            <div key={i} style={{
+              fontSize:11, color: i === bootLine - 1 ? '#CFFF00' : '#2a2a2a',
+              marginBottom:4, letterSpacing:'.04em',
+              transition:'color .3s',
+            }}>
+              {line}
+              {i === bootLine - 1 && (
+                <span style={{animation:'blink 0.8s infinite'}}>█</span>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (!member) return null
+
+  /* ── Dashboard ── */
+  return (
+    <div style={{
+      minHeight:'100vh', background:'#080808',
+      color:'#e0e0e0', fontFamily:'var(--font-dm-sans)',
+      overflowX:'hidden', cursor:'none',
+    }}>
+      <style>{`
+        body { background:#080808; cursor:none; }
+        ::-webkit-scrollbar { width:3px }
+        ::-webkit-scrollbar-thumb { background:#CFFF00; border-radius:2px }
+
+        @keyframes fadeSlideUp {
+          from { opacity:0; transform:translateY(20px); }
+          to   { opacity:1; transform:translateY(0); }
+        }
+        @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+        @keyframes scanline {
+          0%   { transform:translateY(-100%); }
+          100% { transform:translateY(100vh); }
+        }
+        @keyframes pulseGlow {
+          0%,100% { box-shadow:0 0 0 0 rgba(207,255,0,0); }
+          50%      { box-shadow:0 0 24px 4px rgba(207,255,0,0.1); }
+        }
+        @keyframes liquidFill {
+          from { width:0% }
+          to   { width:${xpPct}% }
+        }
+        @keyframes float {
+          0%,100% { transform:translateY(0); }
+          50%      { transform:translateY(-5px); }
+        }
+        @keyframes rotateRing {
+          from { transform:rotate(0deg); }
+          to   { transform:rotate(360deg); }
+        }
+
+        .reveal { opacity:0; }
+        .reveal.on {
+          animation: fadeSlideUp .6s cubic-bezier(.16,1,.3,1) forwards;
+        }
+        .stat-card {
+          background:#0d0d0d;
+          border:1px solid #161616;
+          border-radius:14px;
+          padding:20px;
+          transition: border-color .25s, transform .25s;
+          position:relative;
+          overflow:hidden;
+        }
+        .stat-card::before {
+          content:'';
+          position:absolute;
+          inset:0;
+          background:radial-gradient(circle at top left, rgba(207,255,0,0.03) 0%, transparent 60%);
+          pointer-events:none;
+        }
+        .stat-card:hover {
+          border-color:rgba(207,255,0,0.18);
+          transform:translateY(-2px);
+        }
+        .badge-chip {
+          display:flex; align-items:center; gap:8px;
+          background:#0d0d0d; border:1px solid #161616;
+          border-radius:10px; padding:10px 14px;
+          transition:all .2s;
+        }
+        .badge-chip:hover {
+          border-color:rgba(207,255,0,0.2);
+          background:rgba(207,255,0,0.03);
+        }
+        .noise-overlay {
+          position:fixed; inset:0; pointer-events:none; z-index:1;
+          background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+          opacity:.3;
+        }
+        .scan-line {
+          position:fixed; left:0; right:0; height:1px; z-index:2;
+          background:linear-gradient(90deg, transparent, rgba(207,255,0,0.08), transparent);
+          animation:scanline 8s linear infinite;
+          pointer-events:none;
+        }
+        .mesh-bg {
+          position:fixed; inset:0; pointer-events:none; z-index:0;
+          background:
+            radial-gradient(ellipse 80% 50% at 20% 20%, rgba(207,255,0,0.025) 0%, transparent 60%),
+            radial-gradient(ellipse 60% 40% at 80% 80%, rgba(207,255,0,0.015) 0%, transparent 50%);
+        }
+      `}</style>
+
+      <div className="noise-overlay" />
+      <div className="scan-line" />
+      <div className="mesh-bg" />
+
+      {/* ── NAVBAR ── */}
+      <nav style={{
+        position:'sticky', top:0, zIndex:50,
+        background:'rgba(8,8,8,0.92)', backdropFilter:'blur(16px)',
+        borderBottom:'1px solid #111',
+        padding:'14px 40px',
+        display:'flex', alignItems:'center', justifyContent:'space-between',
+      }}>
+        <Link href="/" style={{display:'flex',alignItems:'center',gap:10,textDecoration:'none'}}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt="" style={{width:26,height:26,objectFit:'contain'}} />
+          <span style={{fontFamily:'var(--font-syne)',fontWeight:800,color:'#fff',fontSize:14,letterSpacing:'-.02em'}}>Chathurya</span>
+        </Link>
+
+        <div style={{display:'flex',alignItems:'center',gap:6}}>
+          {/* Status dot */}
+          <div style={{width:6,height:6,borderRadius:'50%',background:'#CFFF00',boxShadow:'0 0 8px rgba(207,255,0,0.8)'}} />
+          <span style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#555',letterSpacing:'.06em'}}>
+            MEMBER ACTIVE
+          </span>
+        </div>
+
+        <div style={{display:'flex',alignItems:'center',gap:16}}>
+          <span style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#444',letterSpacing:'.04em'}}>
+            {member.first_name} {member.last_name}
+          </span>
+          <button onClick={handleLogout} style={{
+            background:'transparent', border:'1px solid #1e1e1e',
+            borderRadius:7, color:'#333', fontFamily:'var(--font-jetbrains)',
+            fontSize:10, padding:'6px 12px', cursor:'none',
+            letterSpacing:'.04em', transition:'all .2s',
+          }}
+          onMouseEnter={e=>{e.currentTarget.style.borderColor='rgba(207,255,0,0.2)';e.currentTarget.style.color='#CFFF00'}}
+          onMouseLeave={e=>{e.currentTarget.style.borderColor='#1e1e1e';e.currentTarget.style.color='#333'}}>
+            Sign out
+          </button>
+        </div>
+      </nav>
+
+      <div style={{position:'relative',zIndex:2,maxWidth:1200,margin:'0 auto',padding:'48px 40px'}}>
+
+        {/* ══════════════════════════════════════════════════════
+            HERO — Identity + Stats
+        ══════════════════════════════════════════════════════ */}
+        <div style={{
+          display:'grid', gridTemplateColumns:'380px 1fr',
+          gap:24, marginBottom:24,
+          opacity: revealed ? 1 : 0,
+          transition:'opacity .5s ease',
+        }}>
+
+          {/* ── Identity card ── */}
+          <div style={{
+            background:'#0a0a0a',
+            border:'1px solid #1a1a1a',
+            borderRadius:20,
+            padding:32,
+            display:'flex', flexDirection:'column',
+            alignItems:'center',
+            position:'relative',
+            overflow:'hidden',
+            animation: revealed ? 'fadeSlideUp .7s cubic-bezier(.16,1,.3,1) forwards' : 'none',
+          }}>
+            {/* Corner accents */}
+            {[[0,0],[0,1],[1,0],[1,1]].map(([t,r],i) => (
+              <div key={i} style={{
+                position:'absolute',
+                width:16, height:16,
+                ...(t===0?{top:12}:{bottom:12}),
+                ...(r===0?{left:12}:{right:12}),
+                borderTop:   t===0 ? '1px solid rgba(207,255,0,0.2)' : 'none',
+                borderBottom:t===1 ? '1px solid rgba(207,255,0,0.2)' : 'none',
+                borderLeft:  r===0 ? '1px solid rgba(207,255,0,0.2)' : 'none',
+                borderRight: r===1 ? '1px solid rgba(207,255,0,0.2)' : 'none',
+              }} />
+            ))}
+
+            {/* Radial glow behind avatar */}
+            <div style={{
+              position:'absolute', width:200, height:200,
+              borderRadius:'50%',
+              background:'radial-gradient(circle, rgba(207,255,0,0.06) 0%, transparent 70%)',
+              top:'50%', left:'50%', transform:'translate(-50%,-60%)',
+              pointerEvents:'none',
+            }} />
+
+            {/* Avatar with orbital ring */}
+            <div style={{position:'relative', width:160, height:160, marginBottom:24}}>
+              <OrbitalRing xp={member.xp} maxXp={next.xp} size={160} />
+
+              {/* Avatar */}
+              <div style={{
+                position:'absolute',
+                top:'50%', left:'50%',
+                transform:'translate(-50%,-50%)',
+                width:80, height:80, borderRadius:'50%',
+                background: member.avatar_url ? 'transparent' : 'linear-gradient(135deg,#CFFF00,#a8cc00)',
+                display:'flex', alignItems:'center', justifyContent:'center',
+                fontFamily:'var(--font-syne)', fontWeight:800,
+                color:'#000', fontSize:26,
+                animation:'float 5s ease-in-out infinite',
+                overflow:'hidden',
+              }}>
+                {member.avatar_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={member.avatar_url} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}} />
+                ) : initials}
+              </div>
+            </div>
+
+            {/* Name + role */}
+            <h1 style={{
+              fontFamily:'var(--font-syne)', fontWeight:800,
+              color:'#fff', fontSize:22, letterSpacing:'-.04em',
+              textAlign:'center', margin:'0 0 4px', lineHeight:1,
+            }}>
+              {member.first_name} {member.last_name}
+            </h1>
+
+            <div style={{
+              fontFamily:'var(--font-jetbrains)', fontSize:10,
+              color:'#CFFF00', letterSpacing:'.12em',
+              textTransform:'uppercase', marginBottom:16,
+            }}>
+              {member.member_archetype ?? member.role} · {member.stream}
+            </div>
+
+            {/* NFC UID */}
+            <div style={{
+              background:'#060606',
+              border:'1px solid #1a1a1a',
+              borderRadius:8, padding:'8px 14px',
+              fontFamily:'var(--font-jetbrains)',
+              fontSize:10, color:'#2e2e2e',
+              letterSpacing:'.08em',
+              marginBottom:20, width:'100%',
+              textAlign:'center',
+            }}>
+              <span style={{color:'#333',marginRight:8}}>UID</span>
+              <span style={{color:'#444'}}>
+                {member.encrypted_uid
+                  ? <ScrambleUID uid={member.encrypted_uid} />
+                  : '— PENDING ISSUANCE —'}
+              </span>
+            </div>
+
+            {/* Member since */}
+            <div style={{
+              fontFamily:'var(--font-jetbrains)', fontSize:9,
+              color:'#2a2a2a', letterSpacing:'.1em',
+              textTransform:'uppercase',
+            }}>
+              Member since {new Date(member.created_at).toLocaleDateString('en-IN',{month:'short',year:'numeric'})}
+              {' · '}Batch {member.batch_year}
+            </div>
+
+            {/* Bio */}
+            {member.bio && (
+              <p style={{
+                fontFamily:'var(--font-dm-sans)', fontSize:12,
+                color:'#444', textAlign:'center', lineHeight:1.7,
+                marginTop:14, maxWidth:260,
+              }}>
+                {member.bio}
+              </p>
+            )}
+
+            {/* Socials */}
+            <div style={{display:'flex',gap:10,marginTop:16}}>
+              {member.github && (
+                <a href={`https://github.com/${member.github}`} target="_blank" rel="noopener noreferrer"
+                  style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#333',textDecoration:'none',
+                    border:'1px solid #1a1a1a',padding:'5px 12px',borderRadius:99,transition:'all .2s'}}
+                  onMouseEnter={e=>{e.currentTarget.style.color='#CFFF00';e.currentTarget.style.borderColor='rgba(207,255,0,0.2)'}}
+                  onMouseLeave={e=>{e.currentTarget.style.color='#333';e.currentTarget.style.borderColor='#1a1a1a'}}>
+                  GitHub ↗
+                </a>
+              )}
+              {member.linkedin && (
+                <a href={`https://linkedin.com/in/${member.linkedin}`} target="_blank" rel="noopener noreferrer"
+                  style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#333',textDecoration:'none',
+                    border:'1px solid #1a1a1a',padding:'5px 12px',borderRadius:99,transition:'all .2s'}}
+                  onMouseEnter={e=>{e.currentTarget.style.color='#CFFF00';e.currentTarget.style.borderColor='rgba(207,255,0,0.2)'}}
+                  onMouseLeave={e=>{e.currentTarget.style.color='#333';e.currentTarget.style.borderColor='#1a1a1a'}}>
+                  LinkedIn ↗
+                </a>
+              )}
+            </div>
+          </div>
+
+          {/* ── Right: Stats grid ── */}
+          <div style={{display:'flex',flexDirection:'column',gap:16}}>
+
+            {/* XP bar */}
+            <div style={{
+              background:'#0a0a0a', border:'1px solid #1a1a1a',
+              borderRadius:16, padding:'22px 24px',
+              animation: revealed ? 'fadeSlideUp .7s .1s cubic-bezier(.16,1,.3,1) forwards' : 'none',
+              opacity:0,
+            }}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:12}}>
+                <div>
+                  <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#444',letterSpacing:'.1em',textTransform:'uppercase',marginBottom:4}}>Experience Points</div>
+                  <div style={{fontFamily:'var(--font-syne)',fontWeight:800,color:'#CFFF00',fontSize:36,letterSpacing:'-.05em',lineHeight:1}}>
+                    {xpCount.toLocaleString()}
+                    <span style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#333',letterSpacing:'.04em',marginLeft:6,fontWeight:400}}>XP</span>
+                  </div>
+                </div>
+                <div style={{textAlign:'right'}}>
+                  <div style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#333',letterSpacing:'.08em',textTransform:'uppercase',marginBottom:2}}>Next milestone</div>
+                  <div style={{fontFamily:'var(--font-syne)',fontWeight:700,color:'#555',fontSize:14}}>
+                    {next.icon} {next.label}
+                  </div>
+                  <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#2a2a2a'}}>
+                    {next.xp - member.xp} XP away
+                  </div>
+                </div>
+              </div>
+              {/* Progress track */}
+              <div style={{height:4,background:'#111',borderRadius:2,overflow:'hidden',position:'relative'}}>
+                <div style={{
+                  height:'100%', borderRadius:2,
+                  background:'linear-gradient(90deg,#a8cc00,#CFFF00)',
+                  width:`${xpPct}%`,
+                  transition:'width 1.4s cubic-bezier(.4,0,.2,1)',
+                  boxShadow:'0 0 8px rgba(207,255,0,0.4)',
+                }} />
+              </div>
+              <div style={{display:'flex',justifyContent:'space-between',marginTop:5}}>
+                <span style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#2a2a2a'}}>{prev.xp} XP</span>
+                <span style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#2a2a2a'}}>{next.xp} XP</span>
+              </div>
+            </div>
+
+            {/* 2×2 stat grid */}
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,flex:1}}>
+              {[
+                { label:'Badges Earned',    value: badges.length,      unit:'',      icon:'🏅', delay:'.2s' },
+                { label:'Workshops',        value: attendance.length,  unit:'attended',icon:'⚡', delay:'.3s' },
+                { label:'Year',             value: `${member.year === 1?'1st':member.year===2?'2nd':'3rd'}`, unit:member.section, icon:'📚', delay:'.35s', noCount:true },
+                { label:'NFC Card',         value: member.encrypted_uid ? 'Active' : 'Pending', unit:'', icon:'🃏', delay:'.4s', noCount:true },
+              ].map((s,i) => (
+                <div key={i} className="stat-card" style={{
+                  animation: revealed ? `fadeSlideUp .6s ${s.delay} cubic-bezier(.16,1,.3,1) forwards` : 'none',
+                  opacity:0,
+                }}>
+                  <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#383838',letterSpacing:'.08em',textTransform:'uppercase',marginBottom:10,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                    {s.label}
+                    <span style={{fontSize:16}}>{s.icon}</span>
+                  </div>
+                  <div style={{fontFamily:'var(--font-syne)',fontWeight:800,color:'#CFFF00',fontSize:24,letterSpacing:'-.04em',lineHeight:1}}>
+                    {s.value}
+                  </div>
+                  {s.unit && (
+                    <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#2a2a2a',marginTop:4,textTransform:'uppercase',letterSpacing:'.06em'}}>
+                      {s.unit}
+                    </div>
+                  )}
+                  <div style={{
+                    position:'absolute', bottom:0, left:0, right:0, height:2,
+                    background:`linear-gradient(90deg,rgba(207,255,0,0.${i*2+1}),transparent)`,
+                    borderRadius:'0 0 14px 14px',
+                  }} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* ══════════════════════════════════════════════════════
+            SKILLS
+        ══════════════════════════════════════════════════════ */}
+        {member.skills && member.skills.length > 0 && (
+          <div style={{
+            background:'#0a0a0a', border:'1px solid #1a1a1a',
+            borderRadius:16, padding:'20px 24px',
+            marginBottom:24,
+            animation: revealed ? 'fadeSlideUp .6s .45s cubic-bezier(.16,1,.3,1) forwards' : 'none',
+            opacity:0,
+          }}>
+            <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#383838',letterSpacing:'.1em',textTransform:'uppercase',marginBottom:14}}>
+              Skills
+            </div>
+            <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
+              {member.skills.map(s => (
+                <span key={s} style={{
+                  fontFamily:'var(--font-jetbrains)', fontSize:11,
+                  color:'#555', background:'rgba(207,255,0,0.04)',
+                  border:'1px solid rgba(207,255,0,0.1)',
+                  padding:'5px 12px', borderRadius:99,
+                  letterSpacing:'.04em', transition:'all .2s',
+                }}
+                onMouseEnter={e=>{e.currentTarget.style.color='#CFFF00';e.currentTarget.style.borderColor='rgba(207,255,0,0.25)'}}
+                onMouseLeave={e=>{e.currentTarget.style.color='#555';e.currentTarget.style.borderColor='rgba(207,255,0,0.1)'}}>
+                  {s}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ══════════════════════════════════════════════════════
+            BADGES + ATTENDANCE
+        ══════════════════════════════════════════════════════ */}
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:20}}>
+
+          {/* Badges */}
+          <div style={{
+            background:'#0a0a0a', border:'1px solid #1a1a1a',
+            borderRadius:16, padding:'22px 24px',
+            animation: revealed ? 'fadeSlideUp .6s .5s cubic-bezier(.16,1,.3,1) forwards' : 'none',
+            opacity:0,
+          }}>
+            <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#383838',letterSpacing:'.1em',textTransform:'uppercase',marginBottom:16}}>
+              Badges {badges.length > 0 && <span style={{color:'#CFFF00'}}>· {badges.length}</span>}
+            </div>
+            {badges.length === 0 ? (
+              <div style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#1e1e1e',letterSpacing:'.04em',padding:'20px 0',textAlign:'center'}}>
+                No badges yet — attend workshops to earn them
+              </div>
+            ) : (
+              <div style={{display:'flex',flexDirection:'column',gap:8}}>
+                {badges.map((b, i) => (
+                  <div key={i} className="badge-chip">
+                    <span style={{fontSize:18,flexShrink:0}}>{b.badge_definitions.icon}</span>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontFamily:'var(--font-syne)',fontWeight:700,color:'#fff',fontSize:12,letterSpacing:'-.01em'}}>{b.badge_definitions.name}</div>
+                      <div style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#333',marginTop:1}}>{b.badge_definitions.description}</div>
+                    </div>
+                    <div style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#2a2a2a',flexShrink:0}}>
+                      {new Date(b.awarded_at).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Recent attendance */}
+          <div style={{
+            background:'#0a0a0a', border:'1px solid #1a1a1a',
+            borderRadius:16, padding:'22px 24px',
+            animation: revealed ? 'fadeSlideUp .6s .55s cubic-bezier(.16,1,.3,1) forwards' : 'none',
+            opacity:0,
+          }}>
+            <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#383838',letterSpacing:'.1em',textTransform:'uppercase',marginBottom:16}}>
+              Workshop Attendance
+            </div>
+            {attendance.length === 0 ? (
+              <div style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#1e1e1e',letterSpacing:'.04em',padding:'20px 0',textAlign:'center'}}>
+                No attendance recorded yet
+              </div>
+            ) : (
+              <div style={{display:'flex',flexDirection:'column',gap:8}}>
+                {attendance.map((a, i) => (
+                  <div key={i} style={{
+                    display:'flex', alignItems:'center', gap:12,
+                    padding:'10px 14px',
+                    background:'#0d0d0d', border:'1px solid #141414',
+                    borderRadius:10,
+                  }}>
+                    <div style={{
+                      width:6, height:6, borderRadius:'50%', flexShrink:0,
+                      background: a.is_late ? '#ff9800' : '#CFFF00',
+                      boxShadow: `0 0 6px ${a.is_late?'rgba(255,152,0,0.6)':'rgba(207,255,0,0.6)'}`,
+                    }} />
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontFamily:'var(--font-syne)',fontWeight:700,color:'#ccc',fontSize:12,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
+                        {a.workshops?.title ?? 'Workshop'}
+                      </div>
+                      <div style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#333',marginTop:1}}>
+                        {new Date(a.tapped_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}
+                        {a.is_late && <span style={{color:'#ff9800',marginLeft:6}}>Late</span>}
+                      </div>
+                    </div>
+                    <div style={{fontFamily:'var(--font-syne)',fontWeight:800,color:'#CFFF00',fontSize:13,flexShrink:0}}>
+                      +{a.xp_awarded}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div style={{
+          marginTop:48, paddingTop:24,
+          borderTop:'1px solid #111',
+          display:'flex', justifyContent:'space-between', alignItems:'center',
+          fontFamily:'var(--font-jetbrains)', fontSize:10,
+          color:'#1e1e1e', letterSpacing:'.06em',
+        }}>
+          <span>// CSDC Synapse · Chathurya SDC · Seshadripuram College</span>
+          <span>v0.1.0</span>
+        </div>
+      </div>
+    </div>
+  )
+}
