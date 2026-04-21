@@ -31,6 +31,13 @@ class BadgeAward(BaseModel):
     member_id: str
     badge_slug: str
 
+class PollCreate(BaseModel):
+    title:       str
+    description: str = ""
+    options:     list[dict]   # [{"id": "opt_0", "label": "Option A"}, ...]
+    closes_at:   Optional[str] = None
+
+
 
 # ── Applications ──────────────────────────────────────────────────────────────
 
@@ -288,3 +295,22 @@ def analytics_overview():
         "by_year":   years,
         "leaderboard": leaderboard.data,
     }
+
+@router.post("/polls")
+def create_poll(p: PollCreate):
+    sb = supabase_service.get_supabase()
+    response = sb.table("polls").insert({
+        "title":       p.title,
+        "description": p.description,
+        "options":     p.options,
+        "closes_at":   p.closes_at,
+        "is_active":   False,
+    }).execute()
+    return {"success": True, "data": response.data[0]}
+
+
+@router.patch("/polls/{poll_id}/activate")
+def toggle_poll(poll_id: str, active: bool):
+    sb = supabase_service.get_supabase()
+    sb.table("polls").update({"is_active": active}).eq("id", poll_id).execute()
+    return {"success": True}
