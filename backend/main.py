@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from core.config import settings
 from routers import register
-from routers import register, admin, onboard, profile, nfc
+from routers import register, admin, onboard, profile, nfc, tasks
 
 app = FastAPI(
     title="CSDC Synapse API",
@@ -36,3 +36,4 @@ app.include_router(admin.router)
 app.include_router(onboard.router)
 app.include_router(profile.router)
 app.include_router(nfc.router)
+app.include_router(tasks.router)

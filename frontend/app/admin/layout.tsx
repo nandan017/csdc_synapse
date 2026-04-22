@@ -10,6 +10,8 @@ const NAV = [
   { href:'/admin/applications',label:'Applications', icon:'◈' },
   { href:'/admin/members',     label:'Members',      icon:'◉' },
   { href:'/admin/workshops',   label:'Workshops',    icon:'◆' },
+  { href:'/admin/nfc',         label:'NFC Cards',    icon:'🃏' },
+  { href:'/admin/tasks', label:'Tasks',     icon:'◐'  },
   { href:'/admin/analytics',   label:'Analytics',    icon:'◎' },
   { href:'/admin/settings',    label:'Settings',     icon:'⊙' },
 ]
