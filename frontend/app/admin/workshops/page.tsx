@@ -111,6 +111,11 @@ export default function WorkshopsPage() {
     setTimeout(() => setCopiedId(null), 2000)
   }
 
+  const copyFeedbackURL = (id: string) => {
+    navigator.clipboard.writeText(`${window.location.origin}/feedback/${id}`)
+    showToast('Feedback URL copied!')
+  }
+
   const copyVoteURL = (id: string) => {
     const url = `${window.location.origin}/vote/${id}`
     navigator.clipboard.writeText(url)
@@ -256,6 +261,16 @@ export default function WorkshopsPage() {
                     }}>
                     {copiedId===w.id ? '✓ Copied' : '⛓ Attend URL'}
                   </button>
+                  {/* Feedback URL */}
+                  <button onClick={() => copyFeedbackURL(w.id)}
+                  style={{
+                      background: copiedId===w.id ? 'rgba(207,255,0,0.1)' : 'transparent',
+                      border:`1px solid ${copiedId===w.id?'rgba(207,255,0,0.3)':'#1e1e1e'}`,
+                      borderRadius:7,
+                      color:copiedId===w.id?'#CFFF00':'#444',
+                      fontFamily:'var(--font-jetbrains)',fontSize:11,
+                      padding:'6px 14px',cursor:'none',transition:'all .2s',
+                    }}>⛓ Feedback URL</button>
                 </div>
               </div>
             ))}

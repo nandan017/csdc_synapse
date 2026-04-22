@@ -12,7 +12,9 @@ const NAV = [
   { href:'/admin/workshops',   label:'Workshops',    icon:'◆' },
   { href:'/admin/nfc',         label:'NFC Cards',    icon:'🃏' },
   { href:'/admin/tasks', label:'Tasks',     icon:'◐'  },
+  { href:'/admin/feedback', label:'Feedback', icon:'◑' },
   { href:'/admin/analytics',   label:'Analytics',    icon:'◎' },
+  { href:'/admin/vault',    label:'Vault',    icon:'◭' },
   { href:'/admin/settings',    label:'Settings',     icon:'⊙' },
 ]
 // Add this component above the AdminLayout function:
