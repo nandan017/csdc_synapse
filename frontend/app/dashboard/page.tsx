@@ -46,6 +46,32 @@ interface AttendanceRecord {
   workshops: { title: string }
 }
 
+interface Task {
+  id: string
+  title: string
+  description: string
+  xp_reward: number
+  due_date: string | null
+  task_type: string
+  github_repo: string | null
+  workshops: { id: string; title: string }
+}
+
+interface TaskSubmission {
+  task_id: string
+  status: string
+  submission_url: string | null
+  xp_awarded: number | null
+}
+
+interface LeaderboardEntry {
+  first_name: string
+  last_name: string
+  xp: number
+  member_archetype: string | null
+  avatar_url: string | null
+}
+
 /* ── XP milestones ───────────────────────────────────────────────────────── */
 const MILESTONES = [
   { xp: 100,  label: 'Century',      icon: '💯' },
@@ -224,6 +250,12 @@ export default function Dashboard() {
   const [member,     setMember]     = useState<Member | null>(null)
   const [badges,     setBadges]     = useState<Badge[]>([])
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([])
+  const [tasks,      setTasks]      = useState<Task[]>([])
+  const [submissions,setSubmissions]= useState<TaskSubmission[]>([])
+  const [leaderboard,setLeaderboard]= useState<LeaderboardEntry[]>([])
+  const [submitUrl,  setSubmitUrl]  = useState<Record<string, string>>({})
+  const [submitting, setSubmitting] = useState<string | null>(null)
+  const [submitToast,setSubmitToast]= useState<{ msg: string; ok: boolean } | null>(null)
   const [loading,    setLoading]    = useState(true)
   const [booting,    setBooting]    = useState(true)
   const [bootLine,   setBootLine]   = useState(0)
@@ -281,16 +313,67 @@ export default function Dashboard() {
       // Get attendance
       const { data: a } = await sb
         .from('attendance')
-        .select('tapped_at, is_late, xp_awarded, workshops(title)')
+        .select('tapped_at, is_late, xp_awarded, workshops(id, title)')
         .eq('member_id', m.id)
         .order('tapped_at', { ascending: false })
         .limit(5)
 
       setAttendance((a as any) || [])
+      // Get tasks for workshops this member attended
+      const attendedWsIds = (a || []).map((x: any) => x.workshops?.id).filter(Boolean)
+      if (attendedWsIds.length > 0) {
+        const { data: t } = await sb
+          .from('tasks')
+          .select('id, title, description, xp_reward, due_date, task_type, github_repo, workshops(id, title)')
+          .in('workshop_id', attendedWsIds)
+          .eq('is_active', true)
+        setTasks((t as any) || [])
+
+        // Get this member's submissions
+        if (t && t.length > 0) {
+          const { data: subs } = await sb
+            .from('task_submissions')
+            .select('task_id, status, submission_url, xp_awarded')
+            .eq('member_id', m.id)
+          setSubmissions(subs || [])
+        }
+      }
+
+      // Leaderboard — top 10 by XP
+      const { data: lb } = await sb
+        .from('members')
+        .select('first_name, last_name, xp, member_archetype, avatar_url')
+        .order('xp', { ascending: false })
+        .limit(10)
+      setLeaderboard(lb || [])
       setLoading(false)
     }
     load()
   }, [router])
+  const handleTaskSubmit = async (taskId: string) => {
+    const url = submitUrl[taskId]?.trim()
+    if (!url || !member) return
+    setSubmitting(taskId)
+    const res = await fetch('/api/tasks/submissions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        task_id: taskId,
+        member_id: member.id,
+        submission_url: url,
+        notes: '',
+      }),
+    })
+    const data = await res.json()
+    const ok = res.ok && data.success !== false
+    setSubmitToast({ msg: ok ? 'Submission received! Leads will review it.' : (data.detail || data.message || 'Error'), ok })
+    setTimeout(() => setSubmitToast(null), 4000)
+    if (ok) {
+      setSubmissions(p => [...p.filter(s => s.task_id !== taskId), { task_id: taskId, status: 'pending', submission_url: url, xp_awarded: null }])
+      setSubmitUrl(p => ({ ...p, [taskId]: '' }))
+    }
+    setSubmitting(null)
+  }
 
   const handleLogout = async () => {
     await createClient().auth.signOut()
@@ -818,6 +901,244 @@ export default function Dashboard() {
               </div>
             )}
           </div>
+        </div>
+        {/* ══════════════════════════════════════════════════════
+            TASKS + LEADERBOARD
+        ══════════════════════════════════════════════════════ */}
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:20,marginTop:24}}>
+
+          {/* Tasks */}
+          <div style={{
+            background:'#0a0a0a', border:'1px solid #1a1a1a',
+            borderRadius:16, padding:'22px 24px',
+            animation: revealed ? 'fadeSlideUp .6s .6s cubic-bezier(.16,1,.3,1) forwards' : 'none',
+            opacity:0,
+          }}>
+            <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#383838',letterSpacing:'.1em',textTransform:'uppercase',marginBottom:16}}>
+              Workshop Tasks {tasks.length > 0 && <span style={{color:'#CFFF00'}}>· {tasks.length}</span>}
+            </div>
+
+            {/* Submit toast */}
+            {submitToast && (
+              <div style={{
+                marginBottom:12, padding:'9px 14px', borderRadius:8,
+                background: submitToast.ok ? 'rgba(0,230,118,0.08)' : 'rgba(255,64,64,0.08)',
+                border: `1px solid ${submitToast.ok ? 'rgba(0,230,118,0.25)' : 'rgba(255,64,64,0.2)'}`,
+                fontFamily:'var(--font-jetbrains)', fontSize:11,
+                color: submitToast.ok ? '#00e676' : '#ff6b6b',
+              }}>
+                {submitToast.msg}
+              </div>
+            )}
+
+            {tasks.length === 0 ? (
+              <div style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#1e1e1e',letterSpacing:'.04em',padding:'20px 0',textAlign:'center'}}>
+                No tasks yet — attend a workshop to unlock tasks
+              </div>
+            ) : (
+              <div style={{display:'flex',flexDirection:'column',gap:12}}>
+                {tasks.map(t => {
+                  const sub = submissions.find(s => s.task_id === t.id)
+                  const statusColor = sub?.status === 'approved' ? '#00e676'
+                    : sub?.status === 'rejected' ? '#ff4040'
+                    : sub?.status === 'pending'  ? '#ff9800'
+                    : '#2a2a2a'
+                  const statusLabel = sub?.status ?? 'not submitted'
+                  return (
+                    <div key={t.id} style={{
+                      background:'#0d0d0d', border:'1px solid #141414',
+                      borderRadius:12, padding:'14px 16px',
+                    }}>
+                      {/* Task header */}
+                      <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:8,marginBottom:6}}>
+                        <div>
+                          <div style={{fontFamily:'var(--font-syne)',fontWeight:700,color:'#e0e0e0',fontSize:13,letterSpacing:'-.01em'}}>
+                            {t.title}
+                          </div>
+                          <div style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#383838',marginTop:2,letterSpacing:'.04em'}}>
+                            {t.workshops?.title}
+                            {t.due_date && ` · Due ${new Date(t.due_date).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}`}
+                          </div>
+                        </div>
+                        <div style={{display:'flex',gap:6,alignItems:'center',flexShrink:0}}>
+                          <span style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#CFFF00',background:'rgba(207,255,0,0.06)',padding:'2px 8px',borderRadius:99}}>
+                            +{t.xp_reward} XP
+                          </span>
+                          <span style={{fontFamily:'var(--font-jetbrains)',fontSize:9,letterSpacing:'.04em',
+                            color:statusColor,background:`${statusColor}18`,padding:'2px 8px',borderRadius:99,textTransform:'capitalize'}}>
+                            {statusLabel}
+                          </span>
+                        </div>
+                      </div>
+
+                      <p style={{color:'#444',fontSize:12,lineHeight:1.65,margin:'0 0 10px',fontFamily:'var(--font-dm-sans)'}}>
+                        {t.description}
+                      </p>
+
+                      {/* GitHub repo link if specified */}
+                      {t.github_repo && (
+                        <a href={`https://github.com/${t.github_repo}`} target="_blank" rel="noopener noreferrer"
+                          style={{display:'inline-flex',alignItems:'center',gap:5,fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#CFFF00',textDecoration:'none',marginBottom:10}}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+                          </svg>
+                          {t.github_repo} ↗
+                        </a>
+                      )}
+
+                      {/* Submission UI */}
+                      {sub?.status === 'approved' && (
+                        <div style={{display:'flex',alignItems:'center',gap:8,padding:'8px 12px',background:'rgba(0,230,118,0.06)',border:'1px solid rgba(0,230,118,0.15)',borderRadius:8}}>
+                          <span style={{color:'#00e676',fontSize:14}}>✓</span>
+                          <span style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#00e676'}}>Approved · +{sub.xp_awarded} XP earned</span>
+                        </div>
+                      )}
+                      {sub?.status === 'rejected' && (
+                        <div style={{marginTop:4}}>
+                          <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#ff4040',marginBottom:8}}>
+                            Rejected — resubmit below
+                          </div>
+                          <div style={{display:'flex',gap:8}}>
+                            <input
+                              value={submitUrl[t.id] ?? ''}
+                              onChange={e => setSubmitUrl(p => ({...p, [t.id]: e.target.value}))}
+                              placeholder="https://github.com/you/repo"
+                              style={{flex:1,background:'#111',border:'1px solid #1e1e1e',borderRadius:8,color:'#e0e0e0',fontFamily:'var(--font-jetbrains)',fontSize:11,padding:'8px 12px',outline:'none'}}
+                            />
+                            <button onClick={() => handleTaskSubmit(t.id)}
+                              disabled={submitting === t.id || !submitUrl[t.id]?.trim()}
+                              style={{padding:'8px 14px',background:'rgba(207,255,0,0.1)',border:'1px solid rgba(207,255,0,0.25)',borderRadius:8,color:'#CFFF00',fontFamily:'var(--font-jetbrains)',fontSize:11,cursor:'none',whiteSpace:'nowrap'}}>
+                              {submitting === t.id ? '...' : 'Resubmit'}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      {sub?.status === 'pending' && (
+                        <div style={{display:'flex',alignItems:'center',gap:8,padding:'8px 12px',background:'rgba(255,152,0,0.06)',border:'1px solid rgba(255,152,0,0.15)',borderRadius:8}}>
+                          <span style={{color:'#ff9800',fontSize:12}}>⏳</span>
+                          <span style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#ff9800'}}>Under review</span>
+                          {sub.submission_url && (
+                            <a href={sub.submission_url} target="_blank" rel="noopener noreferrer"
+                              style={{marginLeft:'auto',fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#555',textDecoration:'none'}}>
+                              view ↗
+                            </a>
+                          )}
+                        </div>
+                      )}
+                      {!sub && (
+                        <div style={{display:'flex',gap:8}}>
+                          <input
+                            value={submitUrl[t.id] ?? ''}
+                            onChange={e => setSubmitUrl(p => ({...p, [t.id]: e.target.value}))}
+                            placeholder="Paste your GitHub repo URL..."
+                            style={{flex:1,background:'#111',border:'1px solid #1e1e1e',borderRadius:8,color:'#e0e0e0',fontFamily:'var(--font-jetbrains)',fontSize:11,padding:'8px 12px',outline:'none',transition:'border-color .2s'}}
+                            onFocus={e => e.target.style.borderColor='rgba(207,255,0,0.3)'}
+                            onBlur={e  => e.target.style.borderColor='#1e1e1e'}
+                          />
+                          <button onClick={() => handleTaskSubmit(t.id)}
+                            disabled={submitting === t.id || !submitUrl[t.id]?.trim()}
+                            style={{
+                              padding:'8px 16px',
+                              background: submitUrl[t.id]?.trim() ? '#CFFF00' : '#111',
+                              border:'none', borderRadius:8,
+                              color: submitUrl[t.id]?.trim() ? '#000' : '#333',
+                              fontFamily:'var(--font-syne)',fontWeight:800,fontSize:12,
+                              cursor:'none',transition:'all .2s',whiteSpace:'nowrap',
+                            }}>
+                            {submitting === t.id ? '...' : 'Submit →'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Leaderboard */}
+          <div style={{
+            background:'#0a0a0a', border:'1px solid #1a1a1a',
+            borderRadius:16, padding:'22px 24px',
+            animation: revealed ? 'fadeSlideUp .6s .65s cubic-bezier(.16,1,.3,1) forwards' : 'none',
+            opacity:0,
+          }}>
+            <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#383838',letterSpacing:'.1em',textTransform:'uppercase',marginBottom:16}}>
+              XP Leaderboard
+            </div>
+            {leaderboard.length === 0 ? (
+              <div style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#1e1e1e',padding:'20px 0',textAlign:'center'}}>
+                No members yet
+              </div>
+            ) : (
+              <div style={{display:'flex',flexDirection:'column',gap:6}}>
+                {leaderboard.map((entry, i) => {
+                  const isMe = member && entry.first_name === member.first_name && entry.last_name === member.last_name
+                  const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : null
+                  return (
+                    <div key={i} style={{
+                      display:'flex', alignItems:'center', gap:10,
+                      padding:'9px 12px', borderRadius:10,
+                      background: isMe ? 'rgba(207,255,0,0.06)' : '#0d0d0d',
+                      border: `1px solid ${isMe ? 'rgba(207,255,0,0.2)' : '#141414'}`,
+                      transition:'all .2s',
+                    }}>
+                      {/* Rank */}
+                      <div style={{
+                        width:22,height:22,borderRadius:'50%',flexShrink:0,
+                        background: i < 3 ? 'rgba(207,255,0,0.1)' : '#111',
+                        display:'flex',alignItems:'center',justifyContent:'center',
+                        fontFamily:'var(--font-syne)',fontWeight:800,
+                        color: i < 3 ? '#CFFF00' : '#2a2a2a',
+                        fontSize:10,
+                      }}>
+                        {medal ?? i + 1}
+                      </div>
+
+                      {/* Avatar */}
+                      <div style={{
+                        width:28,height:28,borderRadius:'50%',flexShrink:0,
+                        background:'linear-gradient(135deg,#CFFF00,#a8cc00)',
+                        display:'flex',alignItems:'center',justifyContent:'center',
+                        fontFamily:'var(--font-syne)',fontWeight:800,color:'#000',fontSize:10,
+                        overflow:'hidden',
+                      }}>
+                        {entry.avatar_url
+                          // eslint-disable-next-line @next/next/no-img-element
+                          ? <img src={entry.avatar_url} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}} />
+                          : `${entry.first_name[0]}${entry.last_name[0]}`
+                        }
+                      </div>
+
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{
+                          fontFamily:'var(--font-syne)',fontWeight:700,
+                          color: isMe ? '#CFFF00' : '#ccc',
+                          fontSize:12,letterSpacing:'-.01em',
+                          whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',
+                        }}>
+                          {entry.first_name} {entry.last_name}
+                          {isMe && <span style={{fontFamily:'var(--font-jetbrains)',fontSize:8,color:'#CFFF00',marginLeft:6,letterSpacing:'.06em'}}>(you)</span>}
+                        </div>
+                        {entry.member_archetype && (
+                          <div style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#2a2a2a',marginTop:1}}>{entry.member_archetype}</div>
+                        )}
+                      </div>
+
+                      <div style={{
+                        fontFamily:'var(--font-syne)',fontWeight:800,
+                        color: isMe ? '#CFFF00' : '#444',
+                        fontSize:14,flexShrink:0,
+                      }}>
+                        {entry.xp}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+
         </div>
 
         {/* Footer */}
