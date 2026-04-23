@@ -78,11 +78,9 @@ export default function NFCWritePage() {
       })
 
       // Mark as written in Supabase
-      const sb = createClient()
-      await sb
-        .from('members')
-        .update({ nfc_written_at: new Date().toISOString() })
-        .eq('id', member.id)
+      await fetch(`/api/backend/admin/members/${member.id}/nfc-written`, {
+  method: 'PATCH',
+})
 
       setWriteState('success')
       showToast(`Card written for ${memberName} ✓`)

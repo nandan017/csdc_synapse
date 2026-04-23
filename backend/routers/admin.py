@@ -314,3 +314,14 @@ def toggle_poll(poll_id: str, active: bool):
     sb = supabase_service.get_supabase()
     sb.table("polls").update({"is_active": active}).eq("id", poll_id).execute()
     return {"success": True}
+
+@router.patch("/members/{member_id}/nfc-written")
+def mark_nfc_written(member_id: str):
+    sb = supabase_service.get_supabase()
+    from datetime import datetime, timezone
+    response = sb.table("members").update({
+        "nfc_written_at": datetime.now(timezone.utc).isoformat()
+    }).eq("id", member_id).execute()
+    if not response.data:
+        raise HTTPException(404, "Member not found.")
+    return {"success": True}
