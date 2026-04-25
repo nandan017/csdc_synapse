@@ -253,6 +253,8 @@ export default function Dashboard() {
   const [tasks,      setTasks]      = useState<Task[]>([])
   const [submissions,setSubmissions]= useState<TaskSubmission[]>([])
   const [leaderboard,setLeaderboard]= useState<LeaderboardEntry[]>([])
+  const [activity,    setActivity]    = useState<any[]>([])
+  const [connections, setConnections] = useState<any[]>([])
   const [submitUrl,  setSubmitUrl]  = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState<string | null>(null)
   const [submitToast,setSubmitToast]= useState<{ msg: string; ok: boolean } | null>(null)
@@ -346,6 +348,20 @@ export default function Dashboard() {
         .order('xp', { ascending: false })
         .limit(10)
       setLeaderboard(lb || [])
+
+      // Activity feed
+      const actRes = await fetch(`/api/activity/${m.id}`)
+      if (actRes.ok) {
+        const actData = await actRes.json()
+        setActivity(actData.data || [])
+      }
+
+      // Connections
+      const conRes = await fetch(`/api/connect?member_id=${m.id}`)
+      if (conRes.ok) {
+        const conData = await conRes.json()
+        setConnections(conData.data || [])
+      }
       setLoading(false)
     }
     load()
@@ -1139,6 +1155,123 @@ export default function Dashboard() {
             )}
           </div>
 
+        </div>
+        {/* ══════════════════════════════════════════════════════
+            CONNECTIONS + ACTIVITY FEED
+        ══════════════════════════════════════════════════════ */}
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:20,marginTop:20}}>
+
+          {/* Connections */}
+          <div style={{
+            background:'#0a0a0a', border:'1px solid #1a1a1a',
+            borderRadius:16, padding:'22px 24px',
+            animation: revealed ? 'fadeSlideUp .6s .7s cubic-bezier(.16,1,.3,1) forwards' : 'none',
+            opacity:0,
+          }}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16}}>
+              <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#383838',letterSpacing:'.1em',textTransform:'uppercase'}}>
+                Connections {connections.length > 0 && <span style={{color:'#CFFF00'}}>· {connections.length}</span>}
+              </div>
+              <Link href="/connect" style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#CFFF00',textDecoration:'none',border:'1px solid rgba(207,255,0,0.2)',padding:'4px 10px',borderRadius:6,letterSpacing:'.04em'}}>
+                🃏 Tap to connect
+              </Link>
+            </div>
+
+            {connections.length === 0 ? (
+              <div style={{textAlign:'center',padding:'20px 0'}}>
+                <div style={{fontSize:24,marginBottom:8,opacity:.3}}>🃏</div>
+                <div style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#1e1e1e',letterSpacing:'.04em'}}>
+                  No connections yet — tap someone's card
+                </div>
+              </div>
+            ) : (
+              <div style={{display:'flex',flexDirection:'column',gap:8}}>
+                {connections.slice(0, 6).map((c: any, i: number) => {
+                  const m = c.members
+                  if (!m) return null
+                  return (
+                    <div key={i} style={{display:'flex',alignItems:'center',gap:10,padding:'8px 12px',background:'#0d0d0d',border:'1px solid #141414',borderRadius:10}}>
+                      <div style={{width:32,height:32,borderRadius:'50%',flexShrink:0,background:'linear-gradient(135deg,#CFFF00,#a8cc00)',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'var(--font-syne)',fontWeight:800,color:'#000',fontSize:11,overflow:'hidden'}}>
+                        {m.avatar_url
+                          // eslint-disable-next-line @next/next/no-img-element
+                          ? <img src={m.avatar_url} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}} />
+                          : `${m.first_name[0]}${m.last_name[0]}`}
+                      </div>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontFamily:'var(--font-syne)',fontWeight:700,color:'#ccc',fontSize:12,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
+                          {m.first_name} {m.last_name}
+                        </div>
+                        <div style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#2a2a2a',marginTop:1}}>
+                          {m.member_archetype ?? m.stream}
+                        </div>
+                      </div>
+                      {m.id && (
+                        <Link href={`/u/${c.members?.encrypted_uid ?? ''}`} target="_blank"
+                          style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#383838',textDecoration:'none'}}>
+                          ↗
+                        </Link>
+                      )}
+                    </div>
+                  )
+                })}
+                {connections.length > 6 && (
+                  <Link href="/members" style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#444',textDecoration:'none',textAlign:'center',padding:'6px',transition:'color .2s'}}
+                    onMouseEnter={(e:any)=>e.currentTarget.style.color='#CFFF00'}
+                    onMouseLeave={(e:any)=>e.currentTarget.style.color='#444'}>
+                    +{connections.length - 6} more →
+                  </Link>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Activity feed */}
+          <div style={{
+            background:'#0a0a0a', border:'1px solid #1a1a1a',
+            borderRadius:16, padding:'22px 24px',
+            animation: revealed ? 'fadeSlideUp .6s .75s cubic-bezier(.16,1,.3,1) forwards' : 'none',
+            opacity:0,
+          }}>
+            <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#383838',letterSpacing:'.1em',textTransform:'uppercase',marginBottom:16}}>
+              Activity
+            </div>
+
+            {activity.length === 0 ? (
+              <div style={{textAlign:'center',padding:'20px 0'}}>
+                <div style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#1e1e1e',letterSpacing:'.04em'}}>
+                  No activity yet — attend a workshop to start
+                </div>
+              </div>
+            ) : (
+              <div style={{display:'flex',flexDirection:'column',gap:0}}>
+                {activity.slice(0, 8).map((a: any, i: number) => (
+                  <div key={i} style={{
+                    display:'flex', alignItems:'flex-start', gap:12,
+                    padding:'10px 0',
+                    borderBottom: i < activity.length - 1 ? '1px solid #0f0f0f' : 'none',
+                  }}>
+                    {/* Icon */}
+                    <div style={{
+                      width:28,height:28,borderRadius:'50%',flexShrink:0,
+                      background:'#0d0d0d',border:'1px solid #161616',
+                      display:'flex',alignItems:'center',justifyContent:'center',
+                      fontSize:12,marginTop:1,
+                    }}>
+                      {a.icon}
+                    </div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontFamily:'var(--font-dm-sans)',fontSize:12,color:'#555',lineHeight:1.5}}>
+                        {a.description}
+                      </div>
+                      <div style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#2a2a2a',marginTop:3}}>
+                        {new Date(a.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Footer */}

@@ -211,7 +211,6 @@ def _build_invite_html(first_name: str, invite_token: str) -> str:
 </html>
 """
 
-
 async def send_application_confirmation(
     first_name: str,
     last_name: str,
@@ -269,4 +268,55 @@ async def send_invite_email(
         return True
     except ApiException as e:
         print(f"[Brevo] Failed to send invite to {to_email}: {e}")
+        return False
+
+async def send_otp_email(to_email: str, first_name: str, code: str) -> bool:
+    api = _get_api()
+    html = f"""
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#000;font-family:Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#000;padding:40px 20px;">
+  <tr><td align="center">
+    <table width="480" cellpadding="0" cellspacing="0" style="background:#0f0f0f;border:1px solid #222;border-radius:16px;overflow:hidden;max-width:480px;width:100%;">
+      <tr><td style="padding:32px 36px 24px;border-bottom:1px solid #1e1e1e;">
+        <span style="font-family:Arial,sans-serif;font-weight:900;font-size:18px;color:#FEFFFE;letter-spacing:-.04em;">Chathurya</span>
+        <span style="display:block;font-family:'Courier New',monospace;font-size:9px;color:#555;letter-spacing:.12em;text-transform:uppercase;margin-top:2px;">Student Developers Club</span>
+      </td></tr>
+      <tr><td style="padding:32px 36px;">
+        <p style="font-family:'Courier New',monospace;font-size:10px;color:#CFFF00;letter-spacing:.15em;text-transform:uppercase;margin:0 0 16px;">// login verification</p>
+        <h2 style="font-family:Arial,sans-serif;font-weight:900;font-size:22px;color:#FEFFFE;letter-spacing:-.03em;margin:0 0 12px;">
+          Hey {first_name}, here's your code.
+        </h2>
+        <p style="font-size:14px;color:#666;line-height:1.75;margin:0 0 28px;font-weight:300;">
+          Use the code below to complete your login. It expires in <strong style="color:#d0d0d0;">10 minutes</strong>.
+        </p>
+        <div style="background:#080808;border:1px solid #CFFF00;border-radius:12px;padding:20px;text-align:center;margin-bottom:24px;">
+          <span style="font-family:'Courier New',monospace;font-size:36px;font-weight:900;color:#CFFF00;letter-spacing:.3em;">{code}</span>
+        </div>
+        <p style="font-size:12px;color:#333;line-height:1.7;margin:0;">
+          If you didn&apos;t try to log in, ignore this email. Your account is safe.
+        </p>
+      </td></tr>
+      <tr><td style="padding:18px 36px;border-top:1px solid #1e1e1e;">
+        <p style="font-family:'Courier New',monospace;font-size:9px;color:#2a2a2a;margin:0;letter-spacing:.08em;">
+          // Chathurya SDC · Seshadripuram College · Bengaluru
+        </p>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body></html>"""
+
+    send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
+        to=[{"email": to_email, "name": first_name}],
+        sender={"email": settings.sender_email, "name": settings.sender_name},
+        subject=f"Your Chathurya login code: {code}",
+        html_content=html,
+    )
+    try:
+        api.send_transac_email(send_smtp_email)
+        return True
+    except ApiException as e:
+        print(f"[Brevo] OTP email failed: {e}")
         return False
