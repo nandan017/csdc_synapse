@@ -37,8 +37,17 @@ class PollCreate(BaseModel):
     options:     list[dict]   # [{"id": "opt_0", "label": "Option A"}, ...]
     closes_at:   Optional[str] = None
 
-
-
+# Role hierarchy — matches CoC style
+VALID_ROLES = ["member", "core_team", "co_lead", "club_lead"]
+ROLE_LABELS = {
+    "member":    "Member",
+    "core_team": "Core Team",
+    "co_lead":   "Co-Lead",
+    "club_lead": "Club Lead",
+}
+class RoleUpdate(BaseModel):
+    role: str  # one of VALID_ROLES
+    
 # ── Applications ──────────────────────────────────────────────────────────────
 
 @router.get("/applications")
@@ -325,3 +334,41 @@ def mark_nfc_written(member_id: str):
     if not response.data:
         raise HTTPException(404, "Member not found.")
     return {"success": True}
+
+
+@router.patch("/members/{member_id}/role")
+def update_member_role(member_id: str, payload: RoleUpdate):
+    if payload.role not in VALID_ROLES:
+        raise HTTPException(400, f"Invalid role. Must be one of: {', '.join(VALID_ROLES)}")
+
+    sb = supabase_service.get_supabase()
+
+    # Only one club_lead allowed at a time — demote existing if needed
+    if payload.role == "club_lead":
+        sb.table("members").update({"role": "co_lead"}).eq("role", "club_lead").execute()
+
+    response = sb.table("members").update({
+        "role": payload.role
+    }).eq("id", member_id).execute()
+
+    if not response.data:
+        raise HTTPException(404, "Member not found.")
+
+    return {"success": True, "role": payload.role, "label": ROLE_LABELS[payload.role]}
+
+
+@router.get("/workshops/upcoming")
+def get_upcoming_workshops():
+    """Returns upcoming workshops for member notifications."""
+    from datetime import datetime, timezone
+    sb = supabase_service.get_supabase()
+    now = datetime.now(timezone.utc).isoformat()
+    rows = (
+        sb.table("workshops")
+        .select("id, title, description, scheduled_at, location, xp_for_attend")
+        .gte("scheduled_at", now)
+        .order("scheduled_at", ascending=True)
+        .limit(5)
+        .execute()
+    )
+    return {"data": rows.data or []}

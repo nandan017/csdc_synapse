@@ -547,15 +547,27 @@ export default function HomePage() {
                 {item}
               </a>
             ))}
-            <Link href="/register" style={{
-              fontFamily:'var(--font-syne)',fontWeight:800,fontSize:13,
-              color:'#000',background:'#CFFF00',padding:'8px 20px',borderRadius:10,
-              textDecoration:'none',transition:'opacity .2s',
-            }}
-            onMouseEnter={e=>(e.currentTarget.style.opacity='.85')}
-            onMouseLeave={e=>(e.currentTarget.style.opacity='1')}>
-              Apply →
-            </Link>
+            <Link href="/login" style={{
+  fontFamily:'var(--font-syne)',fontWeight:700,fontSize:13,
+  color:'#CFFF00',background:'transparent',
+  padding:'7px 18px',borderRadius:10,
+  border:'1.5px solid #CFFF00',
+  textDecoration:'none',transition:'all .2s',
+  letterSpacing:'-.01em',
+}}
+onMouseEnter={e=>{e.currentTarget.style.background='rgba(207,255,0,0.07)'}}
+onMouseLeave={e=>{e.currentTarget.style.background='transparent'}}>
+  Login
+</Link>
+<Link href="/register" style={{
+  fontFamily:'var(--font-syne)',fontWeight:800,fontSize:13,
+  color:'#000',background:'#CFFF00',padding:'8px 20px',borderRadius:10,
+  textDecoration:'none',transition:'opacity .2s',
+}}
+onMouseEnter={e=>(e.currentTarget.style.opacity='.85')}
+onMouseLeave={e=>(e.currentTarget.style.opacity='1')}>
+  Apply →
+</Link>
           </div>
         </div>
       </nav>
