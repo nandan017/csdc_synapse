@@ -8,6 +8,7 @@ import Link from 'next/link'
 export default function ResetPasswordPage() {
   const router = useRouter()
   const sbRef = useRef(createClient())
+  const tokensRef = useRef<{ access_token: string; refresh_token: string } | null>(null)
   const [password,  setPassword]  = useState('')
   const [confirm,   setConfirm]   = useState('')
   const [showPwd,   setShowPwd]   = useState(false)
@@ -37,14 +38,13 @@ export default function ResetPasswordPage() {
         if (err) {
           setError('Reset link expired or invalid. Please request a new one.')
         } else if (data.session) {
-          // Explicitly set the session to ensure it's stored
-          sb.auth.setSession({
+          // Store tokens in memory so we can re-set them before updateUser
+          tokensRef.current = {
             access_token: data.session.access_token,
             refresh_token: data.session.refresh_token,
-          }).then(() => {
-            setSessionOk(true)
-            window.history.replaceState({}, '', '/reset-password')
-          })
+          }
+          setSessionOk(true)
+          window.history.replaceState({}, '', '/reset-password')
         } else {
           setError('Reset link expired or invalid. Please request a new one.')
         }
@@ -84,6 +84,12 @@ export default function ResetPasswordPage() {
     setError('')
 
     const sb = sbRef.current
+
+    // Re-set the session from stored tokens before updating password
+    if (tokensRef.current) {
+      await sb.auth.setSession(tokensRef.current)
+    }
+
     const { error: err } = await sb.auth.updateUser({ password })
     if (err) { setError(err.message); setLoading(false); return }
 
