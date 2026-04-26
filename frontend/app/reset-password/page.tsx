@@ -15,20 +15,32 @@ export default function ResetPasswordPage() {
   const [done,      setDone]      = useState(false)
   const [sessionOk, setSessionOk] = useState(false)
 
-  // With implicit flow, Supabase redirects here with tokens in the URL hash
-  // (#access_token=...&type=recovery). The browser client detects these
-  // automatically and fires a PASSWORD_RECOVERY event.
   useEffect(() => {
     const sb = createClient()
-
-    // Check if Supabase redirected here with an error (e.g. expired link)
-    // Errors can appear in search params or hash fragment
     const params = new URLSearchParams(window.location.search)
     const hashParams = new URLSearchParams(window.location.hash.replace('#', ''))
+
+    // Check if Supabase redirected with an error (e.g. expired link)
     const errorCode = params.get('error_code') || hashParams.get('error_code')
     const errorDesc = params.get('error_description') || hashParams.get('error_description')
     if (errorCode || errorDesc) {
       setError(errorDesc?.replace(/\+/g, ' ') || 'Reset link expired or invalid. Please request a new one.')
+      return
+    }
+
+    // Handle token_hash verification (from updated email template)
+    const tokenHash = params.get('token_hash')
+    const type = params.get('type')
+    if (tokenHash && type === 'recovery') {
+      sb.auth.verifyOtp({ token_hash: tokenHash, type: 'recovery' }).then(({ error: err }) => {
+        if (err) {
+          setError('Reset link expired or invalid. Please request a new one.')
+        } else {
+          setSessionOk(true)
+          // Clean the URL
+          window.history.replaceState({}, '', '/reset-password')
+        }
+      })
       return
     }
 
@@ -37,13 +49,12 @@ export default function ResetPasswordPage() {
       if (session) setSessionOk(true)
     })
 
-    // Listen for PASSWORD_RECOVERY event — this fires when the browser client
-    // picks up the #access_token from the URL hash (implicit flow)
+    // Listen for PASSWORD_RECOVERY event (fallback)
     const { data: { subscription } } = sb.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY') setSessionOk(true)
     })
 
-    // Timeout: if nothing works after 10s, show an error
+    // Timeout: if no session established after 10s, show error
     const timeout = setTimeout(() => {
       setSessionOk((prev) => {
         if (!prev) setError('Reset link expired or invalid. Please request a new one.')
