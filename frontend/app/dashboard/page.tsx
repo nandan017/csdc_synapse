@@ -362,16 +362,17 @@ export default function Dashboard() {
       if (upRes.ok) {
         const upData = await upRes.json()
         setUpcoming(upData.data || [])
-      }
+      } 
 
       // Connections
       const conRes = await fetch(`/api/connect?member_id=${m.id}`)
       if (conRes.ok) {
         const conData = await conRes.json()
         setConnections(conData.data || [])
-      }
+      } 
+      
       setLoading(false)
-    }
+    } 
     load()
   }, [router])
   const handleTaskSubmit = async (taskId: string) => {
@@ -1294,69 +1295,123 @@ export default function Dashboard() {
         ══════════════════════════════════════════════════════ */}
         {upcoming.length > 0 && (
           <div style={{
-            background:'#0a0a0a', border:'1px solid rgba(207,255,0,0.15)',
+            background:'#0a0a0a',
+            border:'1px solid rgba(207,255,0,0.15)',
             borderRadius:16, padding:'22px 24px', marginTop:20,
             animation: revealed ? 'fadeSlideUp .6s .8s cubic-bezier(.16,1,.3,1) forwards' : 'none',
             opacity:0,
             position:'relative', overflow:'hidden',
           }}>
-            {/* Glow top */}
-            <div style={{position:'absolute',top:0,left:0,right:0,height:2,background:'linear-gradient(90deg,transparent,rgba(207,255,0,0.4),transparent)'}} />
+            {/* Top accent line */}
+            <div style={{position:'absolute',top:0,left:0,right:0,height:2,
+              background:'linear-gradient(90deg,transparent,rgba(207,255,0,0.5),transparent)'}} />
 
-            <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:16}}>
-              <div style={{width:8,height:8,borderRadius:'50%',background:'#CFFF00',boxShadow:'0 0 8px rgba(207,255,0,0.8)',animation:'glowPulse 2s ease-in-out infinite'}} />
-              <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#CFFF00',letterSpacing:'.1em',textTransform:'uppercase'}}>
+            {/* Header */}
+            <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:16,flexWrap:'wrap'}}>
+              <div style={{width:8,height:8,borderRadius:'50%',background:'#CFFF00',
+                boxShadow:'0 0 8px rgba(207,255,0,0.8)',
+                animation:'glowPulse 2s ease-in-out infinite'}} />
+              <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#CFFF00',
+                letterSpacing:'.1em',textTransform:'uppercase'}}>
                 Upcoming Workshops
               </div>
-              <div style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#2a2a2a',marginLeft:'auto',letterSpacing:'.06em'}}>
-                Just tap in with your NFC card to attend — no signup needed
+              <div style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#2a2a2a',
+                marginLeft:'auto',letterSpacing:'.04em'}}>
+                No signup needed — just tap your NFC card at the door
               </div>
             </div>
 
-            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(260px,1fr))',gap:12}}>
-              {upcoming.map((w: any, i: number) => {
-                const date = new Date(w.scheduled_at)
-                const daysUntil = Math.ceil((date.getTime() - Date.now()) / (1000*60*60*24))
-                const isToday = daysUntil === 0
+            {/* Cards */}
+            <div style={{display:'grid',
+              gridTemplateColumns:'repeat(auto-fill,minmax(240px,1fr))',gap:12}}>
+              {upcoming.map((w: any) => {
+                const date      = new Date(w.scheduled_at)
+                const msLeft    = date.getTime() - Date.now()
+                const daysUntil = Math.ceil(msLeft / (1000*60*60*24))
+                const isToday   = daysUntil <= 0
                 const isTomorrow = daysUntil === 1
-                const urgencyColor = isToday ? '#CFFF00' : isTomorrow ? '#ff9800' : '#555'
+                const urgencyColor = isToday ? '#CFFF00'
+                  : isTomorrow       ? '#ff9800'
+                  : '#555'
+                const urgencyLabel = isToday   ? '🔴 Today!'
+                  : isTomorrow               ? '🟡 Tomorrow'
+                  : `In ${daysUntil} days`
+
                 return (
                   <div key={w.id} style={{
-                    background:'#0d0d0d', border:`1px solid ${isToday?'rgba(207,255,0,0.25)':'#141414'}`,
+                    background:'#0d0d0d',
+                    border:`1px solid ${isToday ? 'rgba(207,255,0,0.3)' : '#141414'}`,
                     borderRadius:12, padding:'16px',
                     position:'relative', overflow:'hidden',
+                    transition:'border-color .2s',
                   }}>
+                    {/* Today accent */}
                     {isToday && (
-                      <div style={{position:'absolute',top:0,left:0,right:0,height:2,background:'rgba(207,255,0,0.5)'}} />
+                      <div style={{position:'absolute',top:0,left:0,right:0,height:2,
+                        background:'rgba(207,255,0,0.6)'}} />
                     )}
-                    <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:8,marginBottom:8}}>
-                      <div style={{fontFamily:'var(--font-syne)',fontWeight:700,color:'#fff',fontSize:14,letterSpacing:'-.02em',lineHeight:1.2}}>
+
+                    {/* Title row */}
+                    <div style={{display:'flex',alignItems:'flex-start',
+                      justifyContent:'space-between',gap:8,marginBottom:6}}>
+                      <div style={{fontFamily:'var(--font-syne)',fontWeight:700,
+                        color:'#fff',fontSize:14,letterSpacing:'-.02em',lineHeight:1.2}}>
                         {w.title}
                       </div>
-                      <div style={{fontFamily:'var(--font-jetbrains)',fontSize:9,letterSpacing:'.06em',
-                        color:urgencyColor,background:`${urgencyColor}18`,
-                        padding:'3px 8px',borderRadius:99,flexShrink:0,whiteSpace:'nowrap'}}>
-                        {isToday ? 'Today!' : isTomorrow ? 'Tomorrow' : `In ${daysUntil} days`}
-                      </div>
+                      <span style={{
+                        fontFamily:'var(--font-jetbrains)',fontSize:9,
+                        letterSpacing:'.04em',color:urgencyColor,
+                        background:`${urgencyColor}18`,
+                        padding:'3px 8px',borderRadius:99,flexShrink:0,whiteSpace:'nowrap',
+                      }}>
+                        {urgencyLabel}
+                      </span>
                     </div>
-                    <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#383838',marginBottom:6}}>
-                      {date.toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'})}
+
+                    {/* Date + location */}
+                    <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,
+                      color:'#383838',marginBottom:8,lineHeight:1.6}}>
+                      {date.toLocaleDateString('en-IN',{
+                        weekday:'short',day:'numeric',month:'short'
+                      })}
                       {' · '}
-                      {date.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}
-                      {w.location && ` · ${w.location}`}
+                      {date.toLocaleTimeString('en-IN',{
+                        hour:'2-digit',minute:'2-digit'
+                      })}
+                      {w.location && (
+                        <><br/>{w.location}</>
+                      )}
                     </div>
+
+                    {/* Description */}
                     {w.description && (
-                      <p style={{color:'#444',fontSize:12,lineHeight:1.6,margin:'0 0 10px',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',overflow:'hidden'}}>
+                      <p style={{
+                        color:'#444',fontSize:12,lineHeight:1.6,
+                        margin:'0 0 10px',
+                        display:'-webkit-box',
+                        WebkitLineClamp:2,
+                        WebkitBoxOrient:'vertical',
+                        overflow:'hidden',
+                      }}>
                         {w.description}
                       </p>
                     )}
-                    <div style={{display:'flex',alignItems:'center',gap:6}}>
-                      <span style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#CFFF00',background:'rgba(207,255,0,0.06)',padding:'3px 8px',borderRadius:99}}>
+
+                    {/* XP badge */}
+                    <div style={{display:'flex',alignItems:'center',gap:8}}>
+                      <span style={{
+                        fontFamily:'var(--font-jetbrains)',fontSize:10,
+                        color:'#CFFF00',background:'rgba(207,255,0,0.06)',
+                        padding:'3px 8px',borderRadius:99,
+                      }}>
                         +{w.xp_for_attend} XP
                       </span>
-                      <span style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#2a2a2a'}}>
-                        Tap NFC card to attend
-                      </span>
+                      {isToday && (
+                        <span style={{fontFamily:'var(--font-jetbrains)',fontSize:9,
+                          color:'#CFFF00',letterSpacing:'.04em'}}>
+                          Tap card at door →
+                        </span>
+                      )}
                     </div>
                   </div>
                 )
