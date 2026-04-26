@@ -83,18 +83,40 @@ export default function ResetPasswordPage() {
     setLoading(true)
     setError('')
 
-    const sb = sbRef.current
+    try {
+      if (!tokensRef.current) {
+        setError('Session expired. Please request a new reset link.')
+        setLoading(false)
+        return
+      }
 
-    // Re-set the session from stored tokens before updating password
-    if (tokensRef.current) {
-      await sb.auth.setSession(tokensRef.current)
+      // Call Supabase REST API directly with the stored access token
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/user`,
+        {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${tokensRef.current.access_token}`,
+            'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ password }),
+        }
+      )
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        setError(body.msg || body.message || 'Failed to update password. Please try again.')
+        setLoading(false)
+        return
+      }
+
+      setDone(true)
+      setTimeout(() => router.push('/login'), 2500)
+    } catch {
+      setError('Something went wrong. Please try again.')
+      setLoading(false)
     }
-
-    const { error: err } = await sb.auth.updateUser({ password })
-    if (err) { setError(err.message); setLoading(false); return }
-
-    setDone(true)
-    setTimeout(() => router.push('/login'), 2500)
   }
 
   const strength = (() => {
