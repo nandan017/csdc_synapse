@@ -1,12 +1,13 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import Link from 'next/link'
 
 export default function ResetPasswordPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [password,  setPassword]  = useState('')
   const [confirm,   setConfirm]   = useState('')
   const [showPwd,   setShowPwd]   = useState(false)
@@ -15,12 +16,25 @@ export default function ResetPasswordPage() {
   const [done,      setDone]      = useState(false)
   const [sessionOk, setSessionOk] = useState(false)
 
-  // The auth callback route exchanges the code for a session before redirecting here.
-  // Check for an existing session on mount, and also listen for PASSWORD_RECOVERY event.
   useEffect(() => {
     const sb = createClient()
+    const code = searchParams.get('code')
 
-    // Check if session already exists (set by the callback route)
+    // If there's a PKCE code in the URL, exchange it for a session
+    if (code) {
+      sb.auth.exchangeCodeForSession(code).then(({ error: err }) => {
+        if (err) {
+          setError('Reset link expired or invalid. Please request a new one.')
+        } else {
+          setSessionOk(true)
+          // Clean the URL without reloading
+          window.history.replaceState({}, '', '/reset-password')
+        }
+      })
+      return
+    }
+
+    // Check if session already exists
     sb.auth.getSession().then(({ data: { session } }) => {
       if (session) setSessionOk(true)
     })
@@ -42,7 +56,7 @@ export default function ResetPasswordPage() {
       subscription.unsubscribe()
       clearTimeout(timeout)
     }
-  }, [])
+  }, [searchParams])
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault()
