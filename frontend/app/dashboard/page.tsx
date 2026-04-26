@@ -1293,8 +1293,7 @@ export default function Dashboard() {
         {/* ══════════════════════════════════════════════════════
             UPCOMING WORKSHOPS
         ══════════════════════════════════════════════════════ */}
-        {upcoming.length > 0 && (
-          <div style={{
+        <div style={{
             background:'#0a0a0a',
             border:'1px solid rgba(207,255,0,0.15)',
             borderRadius:16, padding:'22px 24px', marginTop:20,
@@ -1321,104 +1320,119 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Cards */}
-            <div style={{display:'grid',
-              gridTemplateColumns:'repeat(auto-fill,minmax(240px,1fr))',gap:12}}>
-              {upcoming.map((w: any) => {
-                const date      = new Date(w.scheduled_at)
-                const msLeft    = date.getTime() - Date.now()
-                const daysUntil = Math.ceil(msLeft / (1000*60*60*24))
-                const isToday   = daysUntil <= 0
-                const isTomorrow = daysUntil === 1
-                const urgencyColor = isToday ? '#CFFF00'
-                  : isTomorrow       ? '#ff9800'
-                  : '#555'
-                const urgencyLabel = isToday   ? '🔴 Today!'
-                  : isTomorrow               ? '🟡 Tomorrow'
-                  : `In ${daysUntil} days`
+            {upcoming.length === 0 ? (
+              <div style={{
+                textAlign:'center', padding:'32px 16px',
+                border:'1px dashed #1a1a1a', borderRadius:12,
+              }}>
+                <div style={{fontSize:32,marginBottom:10,opacity:0.4}}>📅</div>
+                <div style={{fontFamily:'var(--font-syne)',fontWeight:700,color:'#333',
+                  fontSize:14,letterSpacing:'-.02em',marginBottom:6}}>
+                  No upcoming workshops scheduled
+                </div>
+                <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#222',
+                  letterSpacing:'.04em',lineHeight:1.6}}>
+                  Stay tuned — new workshops will appear here when scheduled.
+                </div>
+              </div>
+            ) : (
+              <div style={{display:'grid',
+                gridTemplateColumns:'repeat(auto-fill,minmax(240px,1fr))',gap:12}}>
+                {upcoming.map((w: any) => {
+                  const date      = new Date(w.scheduled_at)
+                  const msLeft    = date.getTime() - Date.now()
+                  const daysUntil = Math.ceil(msLeft / (1000*60*60*24))
+                  const isToday   = daysUntil <= 0
+                  const isTomorrow = daysUntil === 1
+                  const urgencyColor = isToday ? '#CFFF00'
+                    : isTomorrow       ? '#ff9800'
+                    : '#555'
+                  const urgencyLabel = isToday   ? '🔴 Today!'
+                    : isTomorrow               ? '🟡 Tomorrow'
+                    : `In ${daysUntil} days`
 
-                return (
-                  <div key={w.id} style={{
-                    background:'#0d0d0d',
-                    border:`1px solid ${isToday ? 'rgba(207,255,0,0.3)' : '#141414'}`,
-                    borderRadius:12, padding:'16px',
-                    position:'relative', overflow:'hidden',
-                    transition:'border-color .2s',
-                  }}>
-                    {/* Today accent */}
-                    {isToday && (
-                      <div style={{position:'absolute',top:0,left:0,right:0,height:2,
-                        background:'rgba(207,255,0,0.6)'}} />
-                    )}
-
-                    {/* Title row */}
-                    <div style={{display:'flex',alignItems:'flex-start',
-                      justifyContent:'space-between',gap:8,marginBottom:6}}>
-                      <div style={{fontFamily:'var(--font-syne)',fontWeight:700,
-                        color:'#fff',fontSize:14,letterSpacing:'-.02em',lineHeight:1.2}}>
-                        {w.title}
-                      </div>
-                      <span style={{
-                        fontFamily:'var(--font-jetbrains)',fontSize:9,
-                        letterSpacing:'.04em',color:urgencyColor,
-                        background:`${urgencyColor}18`,
-                        padding:'3px 8px',borderRadius:99,flexShrink:0,whiteSpace:'nowrap',
-                      }}>
-                        {urgencyLabel}
-                      </span>
-                    </div>
-
-                    {/* Date + location */}
-                    <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,
-                      color:'#383838',marginBottom:8,lineHeight:1.6}}>
-                      {date.toLocaleDateString('en-IN',{
-                        weekday:'short',day:'numeric',month:'short'
-                      })}
-                      {' · '}
-                      {date.toLocaleTimeString('en-IN',{
-                        hour:'2-digit',minute:'2-digit'
-                      })}
-                      {w.location && (
-                        <><br/>{w.location}</>
-                      )}
-                    </div>
-
-                    {/* Description */}
-                    {w.description && (
-                      <p style={{
-                        color:'#444',fontSize:12,lineHeight:1.6,
-                        margin:'0 0 10px',
-                        display:'-webkit-box',
-                        WebkitLineClamp:2,
-                        WebkitBoxOrient:'vertical',
-                        overflow:'hidden',
-                      }}>
-                        {w.description}
-                      </p>
-                    )}
-
-                    {/* XP badge */}
-                    <div style={{display:'flex',alignItems:'center',gap:8}}>
-                      <span style={{
-                        fontFamily:'var(--font-jetbrains)',fontSize:10,
-                        color:'#CFFF00',background:'rgba(207,255,0,0.06)',
-                        padding:'3px 8px',borderRadius:99,
-                      }}>
-                        +{w.xp_for_attend} XP
-                      </span>
+                  return (
+                    <div key={w.id} style={{
+                      background:'#0d0d0d',
+                      border:`1px solid ${isToday ? 'rgba(207,255,0,0.3)' : '#141414'}`,
+                      borderRadius:12, padding:'16px',
+                      position:'relative', overflow:'hidden',
+                      transition:'border-color .2s',
+                    }}>
+                      {/* Today accent */}
                       {isToday && (
-                        <span style={{fontFamily:'var(--font-jetbrains)',fontSize:9,
-                          color:'#CFFF00',letterSpacing:'.04em'}}>
-                          Tap card at door →
-                        </span>
+                        <div style={{position:'absolute',top:0,left:0,right:0,height:2,
+                          background:'rgba(207,255,0,0.6)'}} />
                       )}
+
+                      {/* Title row */}
+                      <div style={{display:'flex',alignItems:'flex-start',
+                        justifyContent:'space-between',gap:8,marginBottom:6}}>
+                        <div style={{fontFamily:'var(--font-syne)',fontWeight:700,
+                          color:'#fff',fontSize:14,letterSpacing:'-.02em',lineHeight:1.2}}>
+                          {w.title}
+                        </div>
+                        <span style={{
+                          fontFamily:'var(--font-jetbrains)',fontSize:9,
+                          letterSpacing:'.04em',color:urgencyColor,
+                          background:`${urgencyColor}18`,
+                          padding:'3px 8px',borderRadius:99,flexShrink:0,whiteSpace:'nowrap',
+                        }}>
+                          {urgencyLabel}
+                        </span>
+                      </div>
+
+                      {/* Date + location */}
+                      <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,
+                        color:'#383838',marginBottom:8,lineHeight:1.6}}>
+                        {date.toLocaleDateString('en-IN',{
+                          weekday:'short',day:'numeric',month:'short'
+                        })}
+                        {' · '}
+                        {date.toLocaleTimeString('en-IN',{
+                          hour:'2-digit',minute:'2-digit'
+                        })}
+                        {w.location && (
+                          <><br/>{w.location}</>
+                        )}
+                      </div>
+
+                      {/* Description */}
+                      {w.description && (
+                        <p style={{
+                          color:'#444',fontSize:12,lineHeight:1.6,
+                          margin:'0 0 10px',
+                          display:'-webkit-box',
+                          WebkitLineClamp:2,
+                          WebkitBoxOrient:'vertical',
+                          overflow:'hidden',
+                        }}>
+                          {w.description}
+                        </p>
+                      )}
+
+                      {/* XP badge */}
+                      <div style={{display:'flex',alignItems:'center',gap:8}}>
+                        <span style={{
+                          fontFamily:'var(--font-jetbrains)',fontSize:10,
+                          color:'#CFFF00',background:'rgba(207,255,0,0.06)',
+                          padding:'3px 8px',borderRadius:99,
+                        }}>
+                          +{w.xp_for_attend} XP
+                        </span>
+                        {isToday && (
+                          <span style={{fontFamily:'var(--font-jetbrains)',fontSize:9,
+                            color:'#CFFF00',letterSpacing:'.04em'}}>
+                            Tap card at door →
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )
-              })}
-            </div>
+                  )
+                })}
+              </div>
+            )}
           </div>
-        )}
 
         {/* Footer */}
         <div style={{
