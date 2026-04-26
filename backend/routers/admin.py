@@ -241,7 +241,7 @@ def get_upcoming_workshops():
         sb.table("workshops")
         .select("id, title, description, scheduled_at, location, xp_for_attend")
         .gte("scheduled_at", now)
-        .order("scheduled_at", ascending=True)
+        .order("scheduled_at", desc=False)
         .limit(5)
         .execute()
     )
