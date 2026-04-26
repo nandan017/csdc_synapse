@@ -487,6 +487,15 @@ export default function HomePage() {
   const [mouthOpen, setMouthOpen]           = useState(true)
   const [hoveredFeature, setHoveredFeature] = useState<number | null>(null)
 
+  // Supabase fallback: if password reset redirect lands here with ?code=, forward to /reset-password
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const code = params.get('code')
+    if (code) {
+      window.location.href = `/reset-password?code=${code}`
+    }
+  }, [])
+
   useEffect(() => {
     let frame: number
     let t = 0
