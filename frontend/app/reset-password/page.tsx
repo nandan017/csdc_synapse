@@ -1,11 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import Link from 'next/link'
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [password,  setPassword]  = useState('')
@@ -223,5 +223,18 @@ export default function ResetPasswordPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={
+      <div style={{minHeight:'100vh',background:'#080808',display:'flex',alignItems:'center',justifyContent:'center'}}>
+        <div style={{width:32,height:32,border:'2px solid #1a1a1a',borderTopColor:'#CFFF00',borderRadius:'50%',animation:'spin .7s linear infinite'}} />
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}} body{background:#080808}`}</style>
+      </div>
+    }>
+      <ResetPasswordContent />
+    </Suspense>
   )
 }
