@@ -1,12 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import Link from 'next/link'
 
 export default function ResetPasswordPage() {
   const router = useRouter()
+  const sbRef = useRef(createClient())
   const [password,  setPassword]  = useState('')
   const [confirm,   setConfirm]   = useState('')
   const [showPwd,   setShowPwd]   = useState(false)
@@ -16,7 +17,7 @@ export default function ResetPasswordPage() {
   const [sessionOk, setSessionOk] = useState(false)
 
   useEffect(() => {
-    const sb = createClient()
+    const sb = sbRef.current
     const params = new URLSearchParams(window.location.search)
     const hashParams = new URLSearchParams(window.location.hash.replace('#', ''))
 
@@ -32,13 +33,20 @@ export default function ResetPasswordPage() {
     const tokenHash = params.get('token_hash')
     const type = params.get('type')
     if (tokenHash && type === 'recovery') {
-      sb.auth.verifyOtp({ token_hash: tokenHash, type: 'recovery' }).then(({ error: err }) => {
+      sb.auth.verifyOtp({ token_hash: tokenHash, type: 'recovery' }).then(({ data, error: err }) => {
         if (err) {
           setError('Reset link expired or invalid. Please request a new one.')
+        } else if (data.session) {
+          // Explicitly set the session to ensure it's stored
+          sb.auth.setSession({
+            access_token: data.session.access_token,
+            refresh_token: data.session.refresh_token,
+          }).then(() => {
+            setSessionOk(true)
+            window.history.replaceState({}, '', '/reset-password')
+          })
         } else {
-          setSessionOk(true)
-          // Clean the URL
-          window.history.replaceState({}, '', '/reset-password')
+          setError('Reset link expired or invalid. Please request a new one.')
         }
       })
       return
@@ -75,7 +83,7 @@ export default function ResetPasswordPage() {
     setLoading(true)
     setError('')
 
-    const sb = createClient()
+    const sb = sbRef.current
     const { error: err } = await sb.auth.updateUser({ password })
     if (err) { setError(err.message); setLoading(false); return }
 
