@@ -1,13 +1,12 @@
 'use client'
 
-import { Suspense, useEffect, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import Link from 'next/link'
 
-function ResetPasswordContent() {
+export default function ResetPasswordPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const [password,  setPassword]  = useState('')
   const [confirm,   setConfirm]   = useState('')
   const [showPwd,   setShowPwd]   = useState(false)
@@ -16,25 +15,12 @@ function ResetPasswordContent() {
   const [done,      setDone]      = useState(false)
   const [sessionOk, setSessionOk] = useState(false)
 
+  // The middleware handles PKCE code exchange before this page loads.
+  // By the time we're here, the session should already be set in cookies.
   useEffect(() => {
     const sb = createClient()
-    const code = searchParams.get('code')
 
-    // If there's a PKCE code in the URL, exchange it for a session
-    if (code) {
-      sb.auth.exchangeCodeForSession(code).then(({ error: err }) => {
-        if (err) {
-          setError('Reset link expired or invalid. Please request a new one.')
-        } else {
-          setSessionOk(true)
-          // Clean the URL without reloading
-          window.history.replaceState({}, '', '/reset-password')
-        }
-      })
-      return
-    }
-
-    // Check if session already exists
+    // Check if session exists (set by middleware after code exchange)
     sb.auth.getSession().then(({ data: { session } }) => {
       if (session) setSessionOk(true)
     })
@@ -44,19 +30,19 @@ function ResetPasswordContent() {
       if (event === 'PASSWORD_RECOVERY') setSessionOk(true)
     })
 
-    // Timeout: if nothing works after 10s, show an error
+    // Timeout: if nothing works after 8s, show an error
     const timeout = setTimeout(() => {
       setSessionOk((prev) => {
         if (!prev) setError('Reset link expired or invalid. Please request a new one.')
         return prev
       })
-    }, 10000)
+    }, 8000)
 
     return () => {
       subscription.unsubscribe()
       clearTimeout(timeout)
     }
-  }, [searchParams])
+  }, [])
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -223,18 +209,5 @@ function ResetPasswordContent() {
         </div>
       </div>
     </div>
-  )
-}
-
-export default function ResetPasswordPage() {
-  return (
-    <Suspense fallback={
-      <div style={{minHeight:'100vh',background:'#080808',display:'flex',alignItems:'center',justifyContent:'center'}}>
-        <div style={{width:32,height:32,border:'2px solid #1a1a1a',borderTopColor:'#CFFF00',borderRadius:'50%',animation:'spin .7s linear infinite'}} />
-        <style>{`@keyframes spin{to{transform:rotate(360deg)}} body{background:#080808}`}</style>
-      </div>
-    }>
-      <ResetPasswordContent />
-    </Suspense>
   )
 }
