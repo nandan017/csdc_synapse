@@ -15,13 +15,33 @@ export default function ResetPasswordPage() {
   const [done,      setDone]      = useState(false)
   const [sessionOk, setSessionOk] = useState(false)
 
-  // Supabase puts the recovery token in the URL hash
-  // The client picks it up automatically on mount
+  // The auth callback route exchanges the code for a session before redirecting here.
+  // Check for an existing session on mount, and also listen for PASSWORD_RECOVERY event.
   useEffect(() => {
     const sb = createClient()
-    sb.auth.onAuthStateChange((event) => {
+
+    // Check if session already exists (set by the callback route)
+    sb.auth.getSession().then(({ data: { session } }) => {
+      if (session) setSessionOk(true)
+    })
+
+    // Also listen for PASSWORD_RECOVERY event (handles hash-based tokens)
+    const { data: { subscription } } = sb.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY') setSessionOk(true)
     })
+
+    // Timeout: if nothing works after 10s, show an error
+    const timeout = setTimeout(() => {
+      setSessionOk((prev) => {
+        if (!prev) setError('Reset link expired or invalid. Please request a new one.')
+        return prev
+      })
+    }, 10000)
+
+    return () => {
+      subscription.unsubscribe()
+      clearTimeout(timeout)
+    }
   }, [])
 
   const handleReset = async (e: React.FormEvent) => {
@@ -102,10 +122,24 @@ export default function ResetPasswordPage() {
         {/* Waiting for session */}
         {!done && !sessionOk && (
           <div style={{background:'#0a0a0a',border:'1px solid #1a1a1a',borderRadius:18,padding:40,textAlign:'center'}}>
-            <div style={{width:32,height:32,border:'2px solid #1a1a1a',borderTopColor:'#CFFF00',borderRadius:'50%',animation:'spin .7s linear infinite',margin:'0 auto 16px'}} />
-            <div style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#444',letterSpacing:'.06em'}}>
-              Verifying reset link...
-            </div>
+            {!error ? (
+              <>
+                <div style={{width:32,height:32,border:'2px solid #1a1a1a',borderTopColor:'#CFFF00',borderRadius:'50%',animation:'spin .7s linear infinite',margin:'0 auto 16px'}} />
+                <div style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#444',letterSpacing:'.06em'}}>
+                  Verifying reset link...
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={{fontSize:36,marginBottom:12}}>⚠️</div>
+                <div style={{fontFamily:'var(--font-jetbrains)',fontSize:12,color:'#ff6b6b',lineHeight:1.7,marginBottom:16}}>
+                  {error}
+                </div>
+                <Link href="/login" style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#CFFF00',textDecoration:'underline'}}>
+                  ← Back to login
+                </Link>
+              </>
+            )}
             <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
           </div>
         )}

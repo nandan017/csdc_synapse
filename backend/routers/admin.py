@@ -231,6 +231,23 @@ def award_xp(member_id: str, delta: int, reason: str):
 
 # ── Workshops ─────────────────────────────────────────────────────────────────
 
+@router.get("/workshops/upcoming")
+def get_upcoming_workshops():
+    """Returns upcoming workshops for member notifications."""
+    from datetime import datetime, timezone
+    sb = supabase_service.get_supabase()
+    now = datetime.now(timezone.utc).isoformat()
+    rows = (
+        sb.table("workshops")
+        .select("id, title, description, scheduled_at, location, xp_for_attend")
+        .gte("scheduled_at", now)
+        .order("scheduled_at", ascending=True)
+        .limit(5)
+        .execute()
+    )
+    return {"data": rows.data or []}
+
+
 @router.get("/workshops")
 def list_workshops():
     sb = supabase_service.get_supabase()
@@ -355,20 +372,3 @@ def update_member_role(member_id: str, payload: RoleUpdate):
         raise HTTPException(404, "Member not found.")
 
     return {"success": True, "role": payload.role, "label": ROLE_LABELS[payload.role]}
-
-
-@router.get("/workshops/upcoming")
-def get_upcoming_workshops():
-    """Returns upcoming workshops for member notifications."""
-    from datetime import datetime, timezone
-    sb = supabase_service.get_supabase()
-    now = datetime.now(timezone.utc).isoformat()
-    rows = (
-        sb.table("workshops")
-        .select("id, title, description, scheduled_at, location, xp_for_attend")
-        .gte("scheduled_at", now)
-        .order("scheduled_at", ascending=True)
-        .limit(5)
-        .execute()
-    )
-    return {"data": rows.data or []}

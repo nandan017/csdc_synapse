@@ -120,7 +120,7 @@ export default function LoginPage() {
     setError('')
     const sb = createClient()
     const { error: err } = await sb.auth.resetPasswordForEmail(resetEmail, {
-      redirectTo: `${window.location.origin}/reset-password`,
+      redirectTo: `${window.location.origin}/api/auth/callback?next=/reset-password`,
     })
     if (err) { setError(err.message); setLoading(false); return }
     setStep('forgot_sent')
