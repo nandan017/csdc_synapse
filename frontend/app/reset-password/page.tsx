@@ -15,37 +15,41 @@ export default function ResetPasswordPage() {
   const [done,      setDone]      = useState(false)
   const [sessionOk, setSessionOk] = useState(false)
 
-  // The middleware handles PKCE code exchange before this page loads.
-  // By the time we're here, the session should already be set in cookies.
+  // With implicit flow, Supabase redirects here with tokens in the URL hash
+  // (#access_token=...&type=recovery). The browser client detects these
+  // automatically and fires a PASSWORD_RECOVERY event.
   useEffect(() => {
     const sb = createClient()
 
     // Check if Supabase redirected here with an error (e.g. expired link)
+    // Errors can appear in search params or hash fragment
     const params = new URLSearchParams(window.location.search)
-    const errorCode = params.get('error_code')
-    const errorDesc = params.get('error_description')
+    const hashParams = new URLSearchParams(window.location.hash.replace('#', ''))
+    const errorCode = params.get('error_code') || hashParams.get('error_code')
+    const errorDesc = params.get('error_description') || hashParams.get('error_description')
     if (errorCode || errorDesc) {
       setError(errorDesc?.replace(/\+/g, ' ') || 'Reset link expired or invalid. Please request a new one.')
       return
     }
 
-    // Check if session exists (set by middleware after code exchange)
+    // Check if session already exists
     sb.auth.getSession().then(({ data: { session } }) => {
       if (session) setSessionOk(true)
     })
 
-    // Also listen for PASSWORD_RECOVERY event (handles hash-based tokens)
+    // Listen for PASSWORD_RECOVERY event — this fires when the browser client
+    // picks up the #access_token from the URL hash (implicit flow)
     const { data: { subscription } } = sb.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY') setSessionOk(true)
     })
 
-    // Timeout: if nothing works after 8s, show an error
+    // Timeout: if nothing works after 10s, show an error
     const timeout = setTimeout(() => {
       setSessionOk((prev) => {
         if (!prev) setError('Reset link expired or invalid. Please request a new one.')
         return prev
       })
-    }, 8000)
+    }, 10000)
 
     return () => {
       subscription.unsubscribe()

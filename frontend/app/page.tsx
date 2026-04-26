@@ -487,12 +487,13 @@ export default function HomePage() {
   const [mouthOpen, setMouthOpen]           = useState(true)
   const [hoveredFeature, setHoveredFeature] = useState<number | null>(null)
 
-  // Supabase fallback: if password reset redirect lands here with ?code=, forward to /reset-password
+  // Supabase fallback: if password reset redirect lands here instead of /reset-password
   useEffect(() => {
+    // Handle ?code= (PKCE) or #access_token= (implicit) landing on wrong page
     const params = new URLSearchParams(window.location.search)
-    const code = params.get('code')
-    if (code) {
-      window.location.href = `/reset-password?code=${code}`
+    const hash = window.location.hash
+    if (params.get('code') || (hash && hash.includes('type=recovery'))) {
+      window.location.href = `/reset-password${window.location.search}${hash}`
     }
   }, [])
 
