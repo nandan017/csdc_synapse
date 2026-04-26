@@ -20,6 +20,15 @@ export default function ResetPasswordPage() {
   useEffect(() => {
     const sb = createClient()
 
+    // Check if Supabase redirected here with an error (e.g. expired link)
+    const params = new URLSearchParams(window.location.search)
+    const errorCode = params.get('error_code')
+    const errorDesc = params.get('error_description')
+    if (errorCode || errorDesc) {
+      setError(errorDesc?.replace(/\+/g, ' ') || 'Reset link expired or invalid. Please request a new one.')
+      return
+    }
+
     // Check if session exists (set by middleware after code exchange)
     sb.auth.getSession().then(({ data: { session } }) => {
       if (session) setSessionOk(true)
