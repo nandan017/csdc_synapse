@@ -77,17 +77,21 @@ export default function MembersPage() {
 
   const updateRole = async (id: string, role: string) => {
     setRoleLoading(id)
-    const res = await fetch(`/api/backend/admin/members/${id}/role`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ role }),
-    })
-    const data = await res.json()
-    if (res.ok) {
-      showToast(`Role updated to ${data.label}`)
-      fetchMembers()
-    } else {
-      showToast(data.detail || 'Failed to update role', false)
+    try {
+      const res = await fetch(`/api/backend/admin/members/${id}/role`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        showToast(`Role updated to ${data.label}`)
+        fetchMembers()
+      } else {
+        showToast(data.detail || 'Failed to update role', false)
+      }
+    } catch (err) {
+      showToast('Network error — please try again', false)
     }
     setRoleLoading(null)
   }
