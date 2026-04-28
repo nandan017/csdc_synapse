@@ -1,8 +1,10 @@
 from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from typing import Optional
 from pydantic import BaseModel
 from services import supabase_service, brevo_service
 from services.crypto_service import generate_uid, encrypt_uid
+import csv, io
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -22,10 +24,14 @@ class BulkInviteRequest(BaseModel):
 class WorkshopCreate(BaseModel):
     title: str
     description: str
-    scheduled_at: str
+    start_at: str
+    end_at: str
+    daily_start_time: str = "09:00"
+    daily_end_time: str = "17:00"
     location: str = ""
-    xp_for_attend: int = 50
+    xp_for_attend: int = 50      # per day
     late_penalty: int = 10
+
 
 class BadgeAward(BaseModel):
     member_id: str
@@ -233,26 +239,27 @@ def award_xp(member_id: str, delta: int, reason: str):
 
 @router.get("/workshops/upcoming")
 def get_upcoming_workshops():
-    """Returns upcoming workshops for member notifications."""
     from datetime import datetime, timezone
     sb = supabase_service.get_supabase()
     now = datetime.now(timezone.utc).isoformat()
     rows = (
         sb.table("workshops")
-        .select("id, title, description, scheduled_at, location, xp_for_attend")
-        .gte("scheduled_at", now)
-        .order("scheduled_at", desc=False)
+        .select("id, title, description, start_at, end_at, location, xp_for_attend")
+        .gte("end_at", now)
+        .order("start_at", desc=False)
         .limit(5)
         .execute()
     )
     return {"data": rows.data or []}
 
 
+
 @router.get("/workshops")
 def list_workshops():
     sb = supabase_service.get_supabase()
-    response = sb.table("workshops").select("*").order("scheduled_at", desc=True).execute()
+    response = sb.table("workshops").select("*").order("start_at", desc=True).execute()
     return {"data": response.data}
+
 
 
 @router.post("/workshops")
@@ -270,12 +277,17 @@ def toggle_workshop(workshop_id: str, active: bool):
 
 
 @router.get("/workshops/{workshop_id}/attendance")
-def workshop_attendance(workshop_id: str):
+def workshop_attendance(workshop_id: str, date: str = None):
     sb = supabase_service.get_supabase()
-    response = sb.table("attendance").select(
+    q = sb.table("attendance").select(
         "*, members(first_name, last_name, email, year, section)"
-    ).eq("workshop_id", workshop_id).execute()
+    ).eq("workshop_id", workshop_id)
+    if date:
+        q = q.eq("attend_date", date)
+    q = q.order("tapped_at", desc=False)
+    response = q.execute()
     return {"data": response.data}
+
 
 
 # ── Analytics ─────────────────────────────────────────────────────────────────
@@ -372,3 +384,43 @@ def update_member_role(member_id: str, payload: RoleUpdate):
         raise HTTPException(404, "Member not found.")
 
     return {"success": True, "role": payload.role, "label": ROLE_LABELS[payload.role]}
+
+@router.get("/workshops/{workshop_id}/attendance/csv")
+def export_attendance_csv(workshop_id: str, date: str = None):
+    sb = supabase_service.get_supabase()
+    ws = sb.table("workshops").select("title").eq("id", workshop_id).limit(1).execute()
+    ws_title = ws.data[0]["title"] if ws.data else "workshop"
+    q = sb.table("attendance").select(
+        "attend_date, tapped_at, is_late, xp_awarded, "
+        "members(first_name, last_name, email, year, section)"
+    ).eq("workshop_id", workshop_id)
+    if date:
+        q = q.eq("attend_date", date)
+    q = q.order("attend_date", desc=False).order("tapped_at", desc=False)
+    rows = q.execute()
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Date", "Name", "Email", "Year", "Section", "Tapped At", "Late", "XP"])
+    for r in (rows.data or []):
+        m = r.get("members", {})
+        writer.writerow([
+            r["attend_date"],
+            f"{m.get('first_name','')} {m.get('last_name','')}",
+            m.get("email", ""), m.get("year", ""), m.get("section", ""),
+            r["tapped_at"], "Yes" if r["is_late"] else "No", r["xp_awarded"],
+        ])
+    output.seek(0)
+    safe = ws_title.replace(" ", "_").lower()
+    fn = f"{safe}_attendance{'_' + date if date else '_all'}.csv"
+    return StreamingResponse(
+        iter([output.getvalue()]), media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={fn}"}
+    )
+
+@router.get("/members/{member_id}/attendance-stats")
+def member_attendance_stats(member_id: str):
+    sb = supabase_service.get_supabase()
+    rows = sb.table("attendance").select("workshop_id, attend_date").eq("member_id", member_id).execute()
+    total_days = len(rows.data or [])
+    workshops = set(r["workshop_id"] for r in (rows.data or []))
+    return {"total_days_attended": total_days, "workshops_attended": len(workshops)}

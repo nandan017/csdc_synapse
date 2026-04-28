@@ -3,15 +3,13 @@
 import { useEffect, useState } from 'react'
 
 interface Workshop {
-  id: string
-  title: string
-  description: string
-  scheduled_at: string
-  location: string
-  xp_for_attend: number
-  late_penalty: number
-  is_active: boolean
+  id: string; title: string; description: string;
+  start_at: string; end_at: string;
+  daily_start_time: string; daily_end_time: string;
+  location: string; xp_for_attend: number;
+  late_penalty: number; is_active: boolean;
 }
+
 
 interface Poll {
   id: string
@@ -30,9 +28,12 @@ export default function WorkshopsPage() {
   const [toast,     setToast]     = useState<string | null>(null)
 
   const [form, setForm] = useState({
-    title:'', description:'', scheduled_at:'',
-    location:'', xp_for_attend:50, late_penalty:10,
-  })
+  title:'', description:'',
+  start_at:'', end_at:'',
+  daily_start_time:'09:00', daily_end_time:'17:00',
+  location:'', xp_for_attend:50, late_penalty:10,
+})
+
   const [pollForm, setPollForm] = useState({
     title:'', description:'',
     options:['',''],
@@ -64,7 +65,7 @@ export default function WorkshopsPage() {
     if (res.ok) {
       showToast('Workshop created ✓')
       setCreating(false)
-      setForm({title:'',description:'',scheduled_at:'',location:'',xp_for_attend:50,late_penalty:10})
+      setForm({title:'',description:'',start_at:'',end_at:'',daily_start_time:'09:00',daily_end_time:'17:00',location:'',xp_for_attend:50,late_penalty:10})
       fetchAll()
     } else showToast('Failed to create')
   }
@@ -166,20 +167,30 @@ export default function WorkshopsPage() {
               <div><Label>Location</Label>
                 <input value={form.location} onChange={e=>setForm(f=>({...f,location:e.target.value}))}
                   style={inputStyle} placeholder="Room / Online" /></div>
-              <div><Label>Date & Time</Label>
-                <input type="datetime-local" value={form.scheduled_at}
-                  onChange={e=>setForm(f=>({...f,scheduled_at:e.target.value}))}
+              <div><Label>From Date</Label>
+                <input type="datetime-local" value={form.start_at}
+                  onChange={e=>setForm(f=>({...f,start_at:e.target.value}))}
                   required style={inputStyle} /></div>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
-                <div><Label>XP</Label>
-                  <input type="number" value={form.xp_for_attend}
-                    onChange={e=>setForm(f=>({...f,xp_for_attend:+e.target.value}))}
-                    style={inputStyle} /></div>
-                <div><Label>Late Penalty</Label>
-                  <input type="number" value={form.late_penalty}
-                    onChange={e=>setForm(f=>({...f,late_penalty:+e.target.value}))}
-                    style={inputStyle} /></div>
-              </div>
+              <div><Label>To Date</Label>
+                <input type="datetime-local" value={form.end_at}
+                  onChange={e=>setForm(f=>({...f,end_at:e.target.value}))}
+                  required style={inputStyle} /></div>
+              <div><Label>Daily Start Time</Label>
+                <input type="time" value={form.daily_start_time}
+                  onChange={e=>setForm(f=>({...f,daily_start_time:e.target.value}))}
+                  style={inputStyle} /></div>
+              <div><Label>Daily End Time</Label>
+                <input type="time" value={form.daily_end_time}
+                  onChange={e=>setForm(f=>({...f,daily_end_time:e.target.value}))}
+                  style={inputStyle} /></div>
+              <div><Label>XP per Day</Label>
+                <input type="number" value={form.xp_for_attend}
+                  onChange={e=>setForm(f=>({...f,xp_for_attend:+e.target.value}))}
+                  style={inputStyle} /></div>
+              <div><Label>Late Penalty</Label>
+                <input type="number" value={form.late_penalty}
+                  onChange={e=>setForm(f=>({...f,late_penalty:+e.target.value}))}
+                  style={inputStyle} /></div>
             </div>
             <div style={{marginBottom:16}}>
               <Label>Description</Label>
@@ -206,7 +217,11 @@ export default function WorkshopsPage() {
           </div>
         ) : (
           <div style={{display:'flex',flexDirection:'column',gap:10}}>
-            {workshops.map(w => (
+            {workshops.map(w => {
+                const start = new Date(w.start_at)
+                const end = new Date(w.end_at)
+                const days = Math.ceil((end.getTime() - start.getTime()) / 86400000) + 1
+              return(
               <div key={w.id}
                 style={{background:'#0d0d0d',border:'1px solid #161616',borderRadius:14,
                   padding:'18px 22px',display:'flex',alignItems:'center',gap:16,flexWrap:'wrap'}}>
@@ -222,13 +237,21 @@ export default function WorkshopsPage() {
                         ● LIVE
                       </span>
                     )}
+            {!w.is_active ? null : new Date(w.end_at) < new Date() && (
+  <span style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#ff9800',
+    background:'rgba(255,152,0,0.08)',padding:'2px 8px',borderRadius:99}}>
+    ⚠ Ended — consider deactivating
+  </span>
+)}
+
                   </div>
                   <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#383838'}}>
-                    {new Date(w.scheduled_at).toLocaleString('en-IN',{
-                      day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'
-                    })}
-                    {w.location && ` · ${w.location}`}
-                  </div>
+  {start.toLocaleDateString('en-IN',{day:'numeric',month:'short'})}
+  {days > 1 && ` — ${end.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}`}
+  {days === 1 && `, ${start.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}`}
+  {w.location && ` · ${w.location}`}
+  {days > 1 && ` · ${days} days`}
+</div>
                 </div>
 
                 <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
@@ -261,6 +284,14 @@ export default function WorkshopsPage() {
                     }}>
                     {copiedId===w.id ? '✓ Copied' : '⛓ Attend URL'}
                   </button>
+                  <button onClick={() => window.open(
+  `/api/backend/admin/workshops/${w.id}/attendance/csv`, '_blank'
+)} style={{
+  background:'transparent', border:'1px solid #1e1e1e', borderRadius:7,
+  color:'#444', fontFamily:'var(--font-jetbrains)', fontSize:11,
+  padding:'6px 14px', cursor:'none',
+}}>⬇ CSV</button>
+
                   {/* Feedback URL */}
                   <button onClick={() => copyFeedbackURL(w.id)}
                   style={{
@@ -273,7 +304,7 @@ export default function WorkshopsPage() {
                     }}>⛓ Feedback URL</button>
                 </div>
               </div>
-            ))}
+            )})}
           </div>
         )}
       </div>

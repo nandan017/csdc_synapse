@@ -1339,7 +1339,9 @@ export default function Dashboard() {
               <div style={{display:'grid',
                 gridTemplateColumns:'repeat(auto-fill,minmax(240px,1fr))',gap:12}}>
                 {upcoming.map((w: any) => {
-                  const date      = new Date(w.scheduled_at)
+                  const date = new Date(w.start_at)
+                  const endDate = new Date(w.end_at)
+                  const totalDays = Math.ceil((endDate.getTime() - date.getTime()) / 86400000) + 1
                   const msLeft    = date.getTime() - Date.now()
                   const daysUntil = Math.ceil(msLeft / (1000*60*60*24))
                   const isToday   = daysUntil <= 0
@@ -1385,13 +1387,12 @@ export default function Dashboard() {
                       {/* Date + location */}
                       <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,
                         color:'#383838',marginBottom:8,lineHeight:1.6}}>
-                        {date.toLocaleDateString('en-IN',{
-                          weekday:'short',day:'numeric',month:'short'
-                        })}
-                        {' · '}
-                        {date.toLocaleTimeString('en-IN',{
-                          hour:'2-digit',minute:'2-digit'
-                        })}
+                        {date.toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'})}
+{totalDays > 1 && ` — ${endDate.toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'})}`}
+{' · '}
+{date.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}
+{totalDays > 1 && <><br/>{totalDays} days</>}
+
                         {w.location && (
                           <><br/>{w.location}</>
                         )}

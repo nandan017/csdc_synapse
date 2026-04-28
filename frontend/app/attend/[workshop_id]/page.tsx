@@ -37,6 +37,7 @@ export default function AttendancePage() {
   const [workshop, setWorkshop] = useState<WorkshopInfo | null>(null)
   const [result,   setResult]   = useState<TapResult | null>(null)
   const [count,    setCount]    = useState(0)
+  const [cooldown, setCooldown] = useState(false)
   const [nfcSupported, setNfcSupported] = useState(true)
 
   /* ── Check NFC support ── */
@@ -74,6 +75,8 @@ export default function AttendancePage() {
       await reader.scan()
 
       reader.onreading = async (event: any) => {
+         if (cooldown) return 
+         setCooldown(true) 
         // Extract URL from NDEF record
         let uid: string | null = null
         for (const record of event.message.records) {
@@ -114,7 +117,10 @@ export default function AttendancePage() {
         else                     setState('success')
 
         // Back to scanning after 3s
-        setTimeout(() => setState('scanning'), 3000)
+        setTimeout(() => {
+    setState('scanning')
+    setCooldown(false)   
+  }, 5000) 
       }
 
       reader.onerror = () => {
@@ -299,6 +305,13 @@ export default function AttendancePage() {
               Hold card to phone
             </p>
           )}
+          {state === 'scanning' && cooldown && (
+  <p style={{fontFamily:'var(--font-jetbrains)',fontSize:10,
+    color:'#333',letterSpacing:'.06em',marginTop:8}}>
+    Cooldown — ready in a moment...
+  </p>
+)}
+
           {(state === 'success' || state === 'late') && result && (
             <div className="tap-result" style={{textAlign:'center',animation:'popIn .35s cubic-bezier(.16,1,.3,1)'}}>
               <p style={{fontFamily:'var(--font-syne)',fontWeight:800,

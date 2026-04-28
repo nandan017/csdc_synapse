@@ -45,20 +45,13 @@ def resolve_member(encrypted_uid: str) -> dict:
 
 @router.post("/attend")
 def record_attendance(payload: AttendRequest):
-    """
-    Called by the /attend/[workshop_id] page when a card is tapped.
-    1. Resolve member from UID
-    2. Check workshop is active
-    3. Prevent duplicate tap
-    4. Record attendance + award XP
-    """
     sb = get_supabase()
     member = resolve_member(payload.encrypted_uid)
 
-    # Check workshop exists and is active
     ws = (
         sb.table("workshops")
-        .select("id, title, xp_for_attend, late_penalty, late_threshold, is_active, scheduled_at")
+        .select("id, title, xp_for_attend, late_penalty, late_threshold, "
+                "is_active, start_at, end_at, daily_start_time")
         .eq("id", payload.workshop_id)
         .limit(1)
         .execute()
@@ -70,92 +63,94 @@ def record_attendance(payload: AttendRequest):
     if not workshop["is_active"]:
         raise HTTPException(400, "This workshop is not currently active.")
 
-    # Duplicate check
+    now = datetime.now(timezone.utc)
+    today = now.date()
+
+    # Check today is within workshop range
+    ws_start = datetime.fromisoformat(workshop["start_at"].replace("Z", "+00:00")).date()
+    ws_end = datetime.fromisoformat(workshop["end_at"].replace("Z", "+00:00")).date()
+    if today < ws_start or today > ws_end:
+        raise HTTPException(400, "Workshop is not scheduled for today.")
+
+    # Duplicate check — per day
     existing = (
-        sb.table("attendance")
-        .select("id")
+        sb.table("attendance").select("id")
         .eq("member_id", member["id"])
         .eq("workshop_id", payload.workshop_id)
-        .limit(1)
-        .execute()
+        .eq("attend_date", today.isoformat())
+        .limit(1).execute()
     )
     if existing.data:
         return {
-            "success":    False,
-            "duplicate":  True,
-            "message":    f"Already tapped in, {member['first_name']}!",
-            "member":     {"first_name": member["first_name"], "last_name": member["last_name"]},
+            "success": False, "duplicate": True,
+            "message": f"Already tapped in today, {member['first_name']}!",
+            "member": {"first_name": member["first_name"], "last_name": member["last_name"]},
         }
 
-    # Determine if late
-    now = datetime.now(timezone.utc)
-    scheduled = datetime.fromisoformat(workshop["scheduled_at"].replace("Z", "+00:00"))
+    # Late check based on daily_start_time
+    from datetime import timedelta
+    try:
+        parts = str(workshop.get("daily_start_time", "09:00")).split(":")
+        daily_start_h, daily_start_m = int(parts[0]), int(parts[1])
+    except Exception:
+        daily_start_h, daily_start_m = 9, 0
 
-    # Parse late_threshold (stored as postgres interval string e.g. "00:15:00")
     try:
         parts = str(workshop["late_threshold"]).split(":")
         threshold_minutes = int(parts[0]) * 60 + int(parts[1])
     except Exception:
         threshold_minutes = 15
 
-    from datetime import timedelta
-    is_late    = now > scheduled + timedelta(minutes=threshold_minutes)
+    # Build today's start time in UTC (adjust if your times are IST)
+    scheduled_today = now.replace(hour=daily_start_h, minute=daily_start_m, second=0, microsecond=0)
+    is_late = now > scheduled_today + timedelta(minutes=threshold_minutes)
     xp_awarded = max(0, workshop["xp_for_attend"] - (workshop["late_penalty"] if is_late else 0))
 
-    # Insert attendance
     sb.table("attendance").insert({
-        "member_id":   member["id"],
+        "member_id": member["id"],
         "workshop_id": payload.workshop_id,
-        "tapped_at":   now.isoformat(),
-        "is_late":     is_late,
-        "xp_awarded":  xp_awarded,
+        "attend_date": today.isoformat(),
+        "tapped_at": now.isoformat(),
+        "is_late": is_late,
+        "xp_awarded": xp_awarded,
     }).execute()
 
-    # Award XP via ledger (trigger auto-updates members.xp)
     sb.table("xp_ledger").insert({
         "member_id": member["id"],
-        "delta":     xp_awarded,
-        "reason":    "workshop_attend",
-        "ref_id":    payload.workshop_id,
+        "delta": xp_awarded,
+        "reason": "workshop_attend",
+        "ref_id": payload.workshop_id,
     }).execute()
 
     return {
-        "success":    True,
-        "duplicate":  False,
-        "is_late":    is_late,
-        "xp_awarded": xp_awarded,
-        "workshop":   workshop["title"],
-        "member":     {"first_name": member["first_name"], "last_name": member["last_name"]},
-        "message":    f"{'Late tap — ' if is_late else ''}+{xp_awarded} XP awarded!",
+        "success": True, "duplicate": False,
+        "is_late": is_late, "xp_awarded": xp_awarded,
+        "workshop": workshop["title"],
+        "member": {"first_name": member["first_name"], "last_name": member["last_name"]},
+        "message": f"{'Late tap — ' if is_late else ''}+{xp_awarded} XP awarded!",
     }
+
 
 
 @router.get("/attend/{workshop_id}/status")
 def attendance_status(workshop_id: str):
-    """Returns workshop info + live attendance count for the reader page."""
     sb = get_supabase()
-
     ws = (
         sb.table("workshops")
-        .select("id, title, is_active, scheduled_at, xp_for_attend")
-        .eq("id", workshop_id)
-        .limit(1)
-        .execute()
+        .select("id, title, is_active, start_at, end_at, xp_for_attend")
+        .eq("id", workshop_id).limit(1).execute()
     )
     if not ws.data:
         raise HTTPException(404, "Workshop not found.")
 
+    today = datetime.now(timezone.utc).date().isoformat()
     count = (
-        sb.table("attendance")
-        .select("id", count="exact")
+        sb.table("attendance").select("id", count="exact")
         .eq("workshop_id", workshop_id)
-        .execute()
+        .eq("attend_date", today).execute()
     )
+    return {**ws.data[0], "today": today, "attendance_count": count.count or 0}
 
-    return {
-        **ws.data[0],
-        "attendance_count": count.count or 0,
-    }
 
 
 # ── Voting ────────────────────────────────────────────────────────────────────
