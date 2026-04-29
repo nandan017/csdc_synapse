@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { authFetch } from '@/lib/auth-fetch'
 
 export default function AnalyticsPage() {
   const [data, setData]       = useState<any>(null)
@@ -10,7 +11,7 @@ export default function AnalyticsPage() {
   const funnelRef             = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
-    fetch('/api/backend/admin/analytics/overview')
+    authFetch('/api/backend/admin/analytics/overview')
       .then(r => r.json())
       .then(d => { setData(d); setLoading(false) })
       .catch(() => setLoading(false))

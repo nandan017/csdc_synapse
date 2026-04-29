@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { authFetch } from '@/lib/auth-fetch'
 
 interface Workshop {
   id: string; title: string; description: string;
@@ -44,8 +45,8 @@ export default function WorkshopsPage() {
   const fetchAll = async () => {
     setLoading(true)
     const [wsRes, pollRes] = await Promise.all([
-      fetch('/api/backend/admin/workshops'),
-      fetch('/api/backend/polls/active'),
+      authFetch('/api/backend/admin/workshops'),
+      authFetch('/api/backend/polls/active'),
     ])
     const wsData   = await wsRes.json()
     const pollData = await pollRes.json()
@@ -58,7 +59,7 @@ export default function WorkshopsPage() {
 
   const createWorkshop = async (e: React.FormEvent) => {
     e.preventDefault()
-    const res = await fetch('/api/backend/admin/workshops', {
+    const res = await authFetch('/api/backend/admin/workshops', {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify(form),
     })
@@ -77,7 +78,7 @@ export default function WorkshopsPage() {
       .map((o, i) => ({ id: `opt_${i}`, label: o.trim() }))
     if (options.length < 2) { showToast('Add at least 2 options'); return }
 
-    const res = await fetch('/api/backend/admin/polls', {
+    const res = await authFetch('/api/backend/admin/polls', {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
         title:       pollForm.title,
@@ -94,13 +95,13 @@ export default function WorkshopsPage() {
   }
 
   const toggleWorkshop = async (id: string, active: boolean) => {
-    await fetch(`/api/backend/admin/workshops/${id}/activate?active=${!active}`, {method:'PATCH'})
+    await authFetch(`/api/backend/admin/workshops/${id}/activate?active=${!active}`, {method:'PATCH'})
     fetchAll()
     showToast(!active ? 'Workshop activated — attendance is live' : 'Workshop deactivated')
   }
 
   const togglePoll = async (id: string, active: boolean) => {
-    await fetch(`/api/backend/admin/polls/${id}/activate?active=${!active}`, {method:'PATCH'})
+    await authFetch(`/api/backend/admin/polls/${id}/activate?active=${!active}`, {method:'PATCH'})
     fetchAll()
   }
 

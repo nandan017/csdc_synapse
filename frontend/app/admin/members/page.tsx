@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { authFetch } from '@/lib/auth-fetch'
 
 interface Member {
   id: string
@@ -58,7 +59,7 @@ export default function MembersPage() {
     setLoading(true)
     const params = new URLSearchParams()
     if (search) params.set('search', search)
-    const res = await fetch(`/api/backend/admin/members?${params}`)
+    const res = await authFetch(`/api/backend/admin/members?${params}`)
     const data = await res.json()
     setMembers(data.data || [])
     setTotal(data.total || 0)
@@ -69,7 +70,7 @@ export default function MembersPage() {
 
   const markTshirt = async (id: string) => {
     setActionLoading(id)
-    const res = await fetch(`/api/backend/admin/members/${id}/tshirt`, { method: 'PATCH' })
+    const res = await authFetch(`/api/backend/admin/members/${id}/tshirt`, { method: 'PATCH' })
     if (res.ok) { showToast('T-shirt marked as dispatched'); fetchMembers() }
     else showToast('Failed', false)
     setActionLoading(null)
@@ -78,7 +79,7 @@ export default function MembersPage() {
   const updateRole = async (id: string, role: string) => {
     setRoleLoading(id)
     try {
-      const res = await fetch(`/api/backend/admin/members/${id}/role`, {
+      const res = await authFetch(`/api/backend/admin/members/${id}/role`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ role }),

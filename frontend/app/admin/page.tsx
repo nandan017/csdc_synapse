@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { authFetch } from '@/lib/auth-fetch'
 
 interface Overview {
   applications: { total:number; pending:number; approved:number; rejected:number }
@@ -17,7 +18,7 @@ export default function AdminOverview() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch('/api/backend/admin/analytics/overview')
+    authFetch('/api/backend/admin/analytics/overview')
       .then(r => r.json())
       .then(d => { setData(d); setLoading(false) })
       .catch(() => setLoading(false))

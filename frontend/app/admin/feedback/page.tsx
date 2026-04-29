@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { authFetch } from '@/lib/auth-fetch'
 
 interface Workshop { id: string; title: string }
 interface Aggregate {
@@ -21,7 +22,7 @@ export default function FeedbackAdminPage() {
   const [loading,    setLoading]    = useState(false)
 
   useEffect(() => {
-    fetch('/api/backend/admin/workshops')
+    authFetch('/api/backend/admin/workshops')
       .then(r => r.json())
       .then(d => { setWorkshops(d.data || []); if (d.data?.[0]) setSelectedWS(d.data[0].id) })
   }, [])
@@ -29,7 +30,7 @@ export default function FeedbackAdminPage() {
   useEffect(() => {
     if (!selectedWS) return
     setLoading(true)
-    fetch(`/api/backend/feedback/workshop/${selectedWS}`)
+    authFetch(`/api/backend/feedback/workshop/${selectedWS}`)
       .then(r => r.json())
       .then(d => { setAggregate(d.aggregate); setRows(d.data || []); setLoading(false) })
   }, [selectedWS])

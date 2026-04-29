@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { authFetch } from '@/lib/auth-fetch'
 
 interface Workshop { id: string; title: string }
 interface Task {
@@ -47,9 +48,9 @@ export default function TasksPage() {
   const fetchAll = useCallback(async () => {
     setLoading(true)
     const [wsRes, taskRes, subRes] = await Promise.all([
-      fetch('/api/backend/admin/workshops'),
-      fetch('/api/backend/tasks/'),
-      fetch(`/api/backend/tasks/submissions?status=${subFilter === 'all' ? '' : subFilter}`),
+      authFetch('/api/backend/admin/workshops'),
+      authFetch('/api/backend/tasks/'),
+      authFetch(`/api/backend/tasks/submissions?status=${subFilter === 'all' ? '' : subFilter}`),
     ])
     const wsData   = await wsRes.json()
     const taskData = await taskRes.json()
@@ -64,7 +65,7 @@ export default function TasksPage() {
 
   const createTask = async (e: React.FormEvent) => {
     e.preventDefault()
-    const res = await fetch('/api/backend/tasks/', {
+    const res = await authFetch('/api/backend/tasks/', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...form, xp_reward: Number(form.xp_reward) }),
     })
@@ -78,7 +79,7 @@ export default function TasksPage() {
 
   const gradeSubmission = async (id: string, status: 'approved' | 'rejected') => {
     const xp = xpOverride ? Number(xpOverride) : undefined
-    const res = await fetch(`/api/backend/tasks/submissions/${id}/grade`, {
+    const res = await authFetch(`/api/backend/tasks/submissions/${id}/grade`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status, feedback: feedback || null, xp_awarded: xp }),
     })

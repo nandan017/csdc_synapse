@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase'
+import { authFetch } from '@/lib/auth-fetch'
 
 interface Member {
   id: string
@@ -78,7 +79,7 @@ export default function NFCWritePage() {
       })
 
       // Mark as written in Supabase
-      await fetch(`/api/backend/admin/members/${member.id}/nfc-written`, {
+      await authFetch(`/api/backend/admin/members/${member.id}/nfc-written`, {
   method: 'PATCH',
 })
 

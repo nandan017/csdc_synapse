@@ -2,6 +2,7 @@
 import { Suspense } from 'react'
 import { useEffect, useState, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
+import { authFetch } from '@/lib/auth-fetch'
 
 interface Application {
   id: string
@@ -68,7 +69,7 @@ function ApplicationsContent() {
     params.set('limit', String(LIMIT))
     params.set('offset', String(page * LIMIT))
 
-    const res = await fetch(`/api/backend/admin/applications?${params}`)
+    const res = await authFetch(`/api/backend/admin/applications?${params}`)
     const data = await res.json()
     setApps(data.data || [])
     setTotal(data.total || 0)
@@ -79,7 +80,7 @@ function ApplicationsContent() {
 
   const doAction = async (id: string, action: 'approved'|'rejected') => {
     setActionLoading(id)
-    const res = await fetch(`/api/backend/admin/applications/${id}`, {
+    const res = await authFetch(`/api/backend/admin/applications/${id}`, {
       method:'PATCH',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ status: action }),
@@ -95,7 +96,7 @@ function ApplicationsContent() {
 
   const sendInvite = async (id: string) => {
     setActionLoading(id + '_invite')
-    const res = await fetch(`/api/backend/admin/applications/${id}/invite`, { method:'POST' })
+    const res = await authFetch(`/api/backend/admin/applications/${id}/invite`, { method:'POST' })
     if (res.ok) {
       showToast('Invite sent ✓')
       fetchApps()
@@ -114,7 +115,7 @@ function ApplicationsContent() {
   const bulkInvite = async () => {
     const ids = Array.from(selected)
     setActionLoading('bulk')
-    const res = await fetch('/api/backend/admin/applications/bulk-invite', {
+    const res = await authFetch('/api/backend/admin/applications/bulk-invite', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ application_ids: ids }),

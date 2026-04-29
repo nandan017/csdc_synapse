@@ -12,20 +12,30 @@ async function handler(request: NextRequest) {
     'Content-Type': 'application/json',
   }
 
-  // Forward Supabase auth token from cookies
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() { return request.cookies.getAll() },
-        setAll() {},  // proxy doesn't set cookies
-      },
+  // Prefer client-sent Authorization header (from authFetch)
+  const clientAuth = request.headers.get('authorization')
+  if (clientAuth) {
+    headers['Authorization'] = clientAuth
+  } else {
+    // Fall back to extracting JWT from cookies
+    try {
+      const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            getAll() { return request.cookies.getAll() },
+            setAll() {},
+          },
+        }
+      )
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`
+      }
+    } catch {
+      // Cookie extraction failed — proceed without auth
     }
-  )
-  const { data: { session } } = await supabase.auth.getSession()
-  if (session?.access_token) {
-    headers['Authorization'] = `Bearer ${session.access_token}`
   }
 
   const fetchOptions: RequestInit = {

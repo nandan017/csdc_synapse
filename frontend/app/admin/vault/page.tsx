@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase'
+import { authFetch } from '@/lib/auth-fetch'
 
 interface Resource {
   id: string; title: string; description: string
@@ -36,7 +37,7 @@ export default function AdminVaultPage() {
 
   const fetchResources = useCallback(async () => {
     setLoading(true)
-    const res = await fetch('/api/backend/vault/')
+    const res = await authFetch('/api/backend/vault/')
     const data = await res.json()
     setResources(data.data || [])
     setLoading(false)
@@ -53,7 +54,7 @@ export default function AdminVaultPage() {
   const createResource = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!memberId) { showToast('No member ID found'); return }
-    const res = await fetch(`/api/backend/vault/?uploader_id=${memberId}`, {
+    const res = await authFetch(`/api/backend/vault/?uploader_id=${memberId}`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(form),
     })
@@ -66,7 +67,7 @@ export default function AdminVaultPage() {
   }
 
   const deleteResource = async (id: string) => {
-    await fetch(`/api/backend/vault/${id}`, { method: 'DELETE' })
+    await authFetch(`/api/backend/vault/${id}`, { method: 'DELETE' })
     showToast('Deleted')
     fetchResources()
   }
