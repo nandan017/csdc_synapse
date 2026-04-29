@@ -256,6 +256,7 @@ export default function Dashboard() {
   const [activity,    setActivity]    = useState<any[]>([])
   const [connections, setConnections] = useState<any[]>([])
   const [upcoming, setUpcoming] = useState<any[]>([])
+  const [currentWs, setCurrentWs] = useState<any[]>([])
   const [submitUrl,  setSubmitUrl]  = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState<string | null>(null)
   const [submitToast,setSubmitToast]= useState<{ msg: string; ok: boolean } | null>(null)
@@ -364,6 +365,14 @@ export default function Dashboard() {
         setUpcoming(upData.data || [])
       } 
 
+      // Current / ongoing workshops
+const curRes = await fetch('/api/workshops/current')
+if (curRes.ok) {
+  const curData = await curRes.json()
+  setCurrentWs(curData.data || [])
+}
+
+
       // Connections
       const conRes = await fetch(`/api/connect?member_id=${m.id}`)
       if (conRes.ok) {
@@ -384,7 +393,6 @@ export default function Dashboard() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         task_id: taskId,
-        member_id: member.id,
         submission_url: url,
         notes: '',
       }),
@@ -1290,6 +1298,82 @@ export default function Dashboard() {
             )}
           </div>
         </div>
+        {/* ══════════════════════════════════════════════════════
+    CURRENT / ONGOING WORKSHOPS
+══════════════════════════════════════════════════════ */}
+<div style={{
+    background:'#0a0a0a',
+    border:'1px solid rgba(0,230,118,0.15)',
+    borderRadius:16, padding:'22px 24px', marginTop:20,
+    animation: revealed ? 'fadeSlideUp .6s .7s cubic-bezier(.16,1,.3,1) forwards' : 'none',
+    opacity:0, position:'relative', overflow:'hidden',
+  }}>
+  <div style={{position:'absolute',top:0,left:0,right:0,height:2,
+    background:'linear-gradient(90deg,transparent,rgba(0,230,118,0.5),transparent)'}} />
+  <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:16,flexWrap:'wrap'}}>
+    <div style={{width:8,height:8,borderRadius:'50%',background:'#00e676',
+      boxShadow:'0 0 8px rgba(0,230,118,0.8)',
+      animation:'glowPulse 2s ease-in-out infinite'}} />
+    <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#00e676',
+      letterSpacing:'.1em',textTransform:'uppercase'}}>
+      Ongoing Workshops
+    </div>
+  </div>
+  {currentWs.length === 0 ? (
+    <div style={{textAlign:'center',padding:'32px 16px',
+      border:'1px dashed #1a1a1a',borderRadius:12}}>
+      <div style={{fontSize:32,marginBottom:10,opacity:0.4}}>🎓</div>
+      <div style={{fontFamily:'var(--font-syne)',fontWeight:700,color:'#333',
+        fontSize:14,letterSpacing:'-.02em',marginBottom:6}}>
+        No workshops running right now
+      </div>
+    </div>
+  ) : (
+    <div style={{display:'grid',
+      gridTemplateColumns:'repeat(auto-fill,minmax(240px,1fr))',gap:12}}>
+      {currentWs.map((w: any) => (
+        <div key={w.id} style={{
+          background:'#0d0d0d',
+          border:`1px solid ${w.joinable ? 'rgba(0,230,118,0.3)' : '#1a1a1a'}`,
+          borderRadius:12, padding:16, position:'relative', overflow:'hidden',
+        }}>
+          {w.joinable && (
+            <div style={{position:'absolute',top:0,left:0,right:0,height:2,
+              background:'rgba(0,230,118,0.6)'}} />
+          )}
+          <div style={{display:'flex',alignItems:'flex-start',
+            justifyContent:'space-between',gap:8,marginBottom:6}}>
+            <div style={{fontFamily:'var(--font-syne)',fontWeight:700,
+              color:'#fff',fontSize:14,letterSpacing:'-.02em',lineHeight:1.2}}>
+              {w.title}
+            </div>
+            <span style={{
+              fontFamily:'var(--font-jetbrains)',fontSize:9,
+              letterSpacing:'.04em',
+              color: w.joinable ? '#00e676' : '#ff9800',
+              background: w.joinable ? 'rgba(0,230,118,0.1)' : 'rgba(255,152,0,0.1)',
+              padding:'3px 8px',borderRadius:99,flexShrink:0,whiteSpace:'nowrap',
+            }}>
+              {w.joinable ? `🟢 Day ${w.days_in}/${w.total_days} · Join now` : `⚠ Day ${w.days_in} · Late to join`}
+            </span>
+          </div>
+          <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,
+            color:'#383838',marginBottom:8,lineHeight:1.6}}>
+            {w.location && `${w.location} · `}+{w.xp_for_attend} XP/day
+          </div>
+          {w.description && (
+            <p style={{color:'#444',fontSize:12,lineHeight:1.6,margin:0,
+              display:'-webkit-box',WebkitLineClamp:2,
+              WebkitBoxOrient:'vertical',overflow:'hidden'}}>
+              {w.description}
+            </p>
+          )}
+        </div>
+      ))}
+    </div>
+  )}
+</div>
+
         {/* ══════════════════════════════════════════════════════
             UPCOMING WORKSHOPS
         ══════════════════════════════════════════════════════ */}

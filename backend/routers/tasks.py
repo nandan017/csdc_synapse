@@ -1,8 +1,9 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime, timezone
 from services.supabase_service import get_supabase
+from core.auth import require_admin, require_member
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 
@@ -20,7 +21,6 @@ class TaskCreate(BaseModel):
 
 class TaskSubmit(BaseModel):
     task_id:      str
-    member_id:    str
     submission_url: Optional[str] = None   # GitHub PR / repo URL
     notes:        Optional[str] = None
 
@@ -33,7 +33,7 @@ class TaskGrade(BaseModel):
 # ── Admin: create task ────────────────────────────────────────────────────────
 
 @router.post("/")
-def create_task(t: TaskCreate):
+def create_task(t: TaskCreate, user=Depends(require_admin)):
     sb = get_supabase()
 
     # Verify workshop exists
@@ -81,8 +81,14 @@ def list_all_tasks(workshop_id: Optional[str] = None):
 # ── Member: submit task ───────────────────────────────────────────────────────
 
 @router.post("/submit")
-def submit_task(payload: TaskSubmit):
+def submit_task(payload: TaskSubmit, user=Depends(require_member)):
     sb = get_supabase()
+
+    # Resolve member_id from authenticated user's JWT
+    member = sb.table("members").select("id").eq("auth_user_id", user.id).limit(1).execute()
+    if not member.data:
+        raise HTTPException(404, "Member profile not found.")
+    member_id = member.data[0]["id"]
 
     # Check task exists and is active
     task = sb.table("tasks").select("*").eq("id", payload.task_id).limit(1).execute()
@@ -91,17 +97,12 @@ def submit_task(payload: TaskSubmit):
     if not task.data[0]["is_active"]:
         raise HTTPException(400, "This task is no longer accepting submissions.")
 
-    # Check member exists
-    member = sb.table("members").select("id").eq("id", payload.member_id).limit(1).execute()
-    if not member.data:
-        raise HTTPException(404, "Member not found.")
-
     # Duplicate submission check
     existing = (
         sb.table("task_submissions")
         .select("id, status")
         .eq("task_id", payload.task_id)
-        .eq("member_id", payload.member_id)
+        .eq("member_id", member_id)
         .limit(1)
         .execute()
     )
@@ -120,7 +121,7 @@ def submit_task(payload: TaskSubmit):
 
     sb.table("task_submissions").insert({
         "task_id":        payload.task_id,
-        "member_id":      payload.member_id,
+        "member_id":      member_id,
         "submission_url": payload.submission_url,
         "notes":          payload.notes,
         "status":         "pending",
@@ -137,6 +138,7 @@ def list_submissions(
     task_id:    Optional[str] = None,
     status:     Optional[str] = None,
     workshop_id: Optional[str] = None,
+    user=Depends(require_admin),
 ):
     sb = get_supabase()
     q = sb.table("task_submissions").select(
@@ -159,7 +161,7 @@ def list_submissions(
 # ── Admin: grade submission ───────────────────────────────────────────────────
 
 @router.patch("/submissions/{submission_id}/grade")
-def grade_submission(submission_id: str, grade: TaskGrade):
+def grade_submission(submission_id: str, grade: TaskGrade, user=Depends(require_admin)):
     if grade.status not in ("approved", "rejected"):
         raise HTTPException(400, "Status must be 'approved' or 'rejected'")
 

@@ -1,10 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
-const B = process.env.BACKEND_URL || 'http://localhost:8000'
+import { getAuthHeaders, BACKEND_URL } from '@/lib/api-helpers'
+
 export async function GET(req: NextRequest) {
-  const res = await fetch(`${B}/tasks/submissions${req.nextUrl.search}`, { cache:'no-store' })
+  const headers = await getAuthHeaders(req)
+  const res = await fetch(`${BACKEND_URL}/tasks/submissions${req.nextUrl.search}`, {
+    cache: 'no-store',
+    headers,
+  })
   return NextResponse.json(await res.json(), { status: res.status })
 }
+
 export async function POST(req: NextRequest) {
-  const res = await fetch(`${B}/tasks/submit`, { method:'POST', headers:{'Content-Type':'application/json'}, body: await req.text() })
+  const headers = await getAuthHeaders(req)
+  const res = await fetch(`${BACKEND_URL}/tasks/submit`, {
+    method: 'POST',
+    headers,
+    body: await req.text(),
+  })
   return NextResponse.json(await res.json(), { status: res.status })
 }

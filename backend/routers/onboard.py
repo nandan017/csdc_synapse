@@ -1,10 +1,13 @@
 import bcrypt
+import logging
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime, timezone
 from services.supabase_service import get_supabase
 from services.crypto_service import generate_uid, encrypt_uid
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/onboard", tags=["onboard"])
 
@@ -130,7 +133,8 @@ def complete_onboarding(payload: OnboardComplete):
                 raise HTTPException(500, "Auth error. Contact club leads.")
             auth_user_id = user.id
         else:
-            raise HTTPException(500, f"Failed to create account: {err_str}")
+            logger.error(f"Auth creation failed for {app['email']}: {err_str}")
+            raise HTTPException(500, "Failed to create account. Contact club leads.")
 
     # 4. Generate & encrypt UID for NFC card
     raw_uid       = generate_uid()
@@ -170,7 +174,8 @@ def complete_onboarding(payload: OnboardComplete):
             # Member already exists — still mark token used
             pass
         else:
-            raise HTTPException(500, f"Failed to create member profile: {err_str}")
+            logger.error(f"Member insert failed for {app['email']}: {err_str}")
+            raise HTTPException(500, "Failed to create member profile. Contact club leads.")
 
     # 6. Mark token as used
     sb.table("invite_tokens").update({

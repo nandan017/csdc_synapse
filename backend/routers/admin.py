@@ -1,12 +1,20 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
+from core.auth import require_admin
 from fastapi.responses import StreamingResponse
 from typing import Optional
 from pydantic import BaseModel
 from services import supabase_service, brevo_service
 from services.crypto_service import generate_uid, encrypt_uid
-import csv, io
+import csv, io, re
 
 router = APIRouter(prefix="/admin", tags=["admin"])
+
+
+# ── Helpers ───────────────────────────────────────────────────────────────────
+
+def sanitize_search(s: str) -> str:
+    """Strip characters that could manipulate PostgREST filters."""
+    return re.sub(r'[%.,()\\]', '', s).strip()[:100]
 
 
 # ── Models ────────────────────────────────────────────────────────────────────
@@ -58,6 +66,7 @@ class RoleUpdate(BaseModel):
 
 @router.get("/applications")
 def list_applications(
+    user=Depends(require_admin),
     status: Optional[str] = Query(None),
     stream: Optional[str] = Query(None),
     year:   Optional[int] = Query(None),
@@ -72,10 +81,11 @@ def list_applications(
     if stream: q = q.eq("stream", stream)
     if year:   q = q.eq("year", year)
     if search:
+        safe = sanitize_search(search)
         q = q.or_(
-            f"first_name.ilike.%{search}%,"
-            f"last_name.ilike.%{search}%,"
-            f"email.ilike.%{search}%"
+            f"first_name.ilike.%{safe}%,"
+            f"last_name.ilike.%{safe}%,"
+            f"email.ilike.%{safe}%"
         )
 
     q = q.order("created_at", desc=True).range(offset, offset + limit - 1)
@@ -97,7 +107,7 @@ def list_applications(
 
 
 @router.patch("/applications/{app_id}")
-def update_application(app_id: str, action: ApplicationAction):
+def update_application(app_id: str, action: ApplicationAction, user=Depends(require_admin)):
     if action.status not in ("approved", "rejected"):
         raise HTTPException(400, "Status must be 'approved' or 'rejected'")
 
@@ -114,7 +124,7 @@ def update_application(app_id: str, action: ApplicationAction):
 
 
 @router.post("/applications/{app_id}/invite")
-async def send_invite(app_id: str):
+async def send_invite(app_id: str, user=Depends(require_admin)):
     sb = supabase_service.get_supabase()
 
     # Get application
@@ -156,11 +166,11 @@ async def send_invite(app_id: str):
 
 
 @router.post("/applications/bulk-invite")
-async def bulk_invite(req: BulkInviteRequest):
+async def bulk_invite(req: BulkInviteRequest, user=Depends(require_admin)):
     results = []
     for app_id in req.application_ids:
         try:
-            result = await send_invite(app_id)
+            result = await send_invite(app_id, user=user)
             results.append({"id": app_id, "success": True})
         except Exception as e:
             results.append({"id": app_id, "success": False, "error": str(e)})
@@ -171,6 +181,7 @@ async def bulk_invite(req: BulkInviteRequest):
 
 @router.get("/members")
 def list_members(
+    user=Depends(require_admin),
     search: Optional[str] = Query(None),
     year:   Optional[int] = Query(None),
     is_alumni: Optional[bool] = Query(None),
@@ -184,7 +195,8 @@ def list_members(
         "encrypted_uid, avatar_url, created_at, linkedin, github"
     )
     if search:
-        q = q.or_(f"first_name.ilike.%{search}%,last_name.ilike.%{search}%,email.ilike.%{search}%")
+        safe = sanitize_search(search)
+        q = q.or_(f"first_name.ilike.%{safe}%,last_name.ilike.%{safe}%,email.ilike.%{safe}%")
     if year:      q = q.eq("year", year)
     if is_alumni is not None: q = q.eq("is_alumni", is_alumni)
     q = q.order("xp", desc=True).range(offset, offset + limit - 1)
@@ -198,7 +210,7 @@ def list_members(
 
 
 @router.patch("/members/{member_id}/tshirt")
-def mark_tshirt_dispatched(member_id: str):
+def mark_tshirt_dispatched(member_id: str, user=Depends(require_admin)):
     sb = supabase_service.get_supabase()
     response = sb.table("members").update(
         {"tshirt_dispatched": True}
@@ -209,7 +221,7 @@ def mark_tshirt_dispatched(member_id: str):
 
 
 @router.post("/members/{member_id}/award-badge")
-def award_badge(member_id: str, req: BadgeAward):
+def award_badge(member_id: str, req: BadgeAward, user=Depends(require_admin)):
     sb = supabase_service.get_supabase()
     badge = sb.table("badge_definitions").select("id").eq("slug", req.badge_slug).execute()
     if not badge.data:
@@ -225,7 +237,7 @@ def award_badge(member_id: str, req: BadgeAward):
 
 
 @router.post("/members/{member_id}/xp")
-def award_xp(member_id: str, delta: int, reason: str):
+def award_xp(member_id: str, delta: int, reason: str, user=Depends(require_admin)):
     sb = supabase_service.get_supabase()
     sb.table("xp_ledger").insert({
         "member_id": member_id,
@@ -238,7 +250,7 @@ def award_xp(member_id: str, delta: int, reason: str):
 # ── Workshops ─────────────────────────────────────────────────────────────────
 
 @router.get("/workshops/upcoming")
-def get_upcoming_workshops():
+def get_upcoming_workshops(user=Depends(require_admin)):
     from datetime import datetime, timezone
     sb = supabase_service.get_supabase()
     now = datetime.now(timezone.utc).isoformat()
@@ -252,10 +264,36 @@ def get_upcoming_workshops():
     )
     return {"data": rows.data or []}
 
+@router.get("/workshops/current")
+def get_current_workshops(user=Depends(require_admin)):
+    """Workshops that started within the last 3 days and haven't ended."""
+    from datetime import datetime, timezone, timedelta
+    sb = supabase_service.get_supabase()
+    now = datetime.now(timezone.utc)
+    join_cutoff = (now - timedelta(days=3)).isoformat()
+
+    rows = (
+        sb.table("workshops")
+        .select("id, title, description, start_at, end_at, location, xp_for_attend, is_active")
+        .eq("is_active", True)
+        .lte("start_at", now.isoformat())    # already started
+        .gte("end_at", now.isoformat())      # hasn't ended
+        .order("start_at", desc=False)
+        .execute()
+    )
+    workshops = rows.data or []
+    # Mark joinable: started within last 3 days
+    for w in workshops:
+        ws_start = datetime.fromisoformat(w["start_at"].replace("Z", "+00:00"))
+        w["joinable"] = (now - ws_start).days <= 3
+        w["days_in"] = (now - ws_start).days + 1
+        ws_end = datetime.fromisoformat(w["end_at"].replace("Z", "+00:00"))
+        w["total_days"] = (ws_end - ws_start).days + 1
+    return {"data": workshops}
 
 
 @router.get("/workshops")
-def list_workshops():
+def list_workshops(user=Depends(require_admin)):
     sb = supabase_service.get_supabase()
     response = sb.table("workshops").select("*").order("start_at", desc=True).execute()
     return {"data": response.data}
@@ -263,21 +301,21 @@ def list_workshops():
 
 
 @router.post("/workshops")
-def create_workshop(w: WorkshopCreate):
+def create_workshop(w: WorkshopCreate, user=Depends(require_admin)):
     sb = supabase_service.get_supabase()
     response = sb.table("workshops").insert(w.model_dump()).execute()
     return {"success": True, "data": response.data[0]}
 
 
 @router.patch("/workshops/{workshop_id}/activate")
-def toggle_workshop(workshop_id: str, active: bool):
+def toggle_workshop(workshop_id: str, active: bool, user=Depends(require_admin)):
     sb = supabase_service.get_supabase()
     sb.table("workshops").update({"is_active": active}).eq("id", workshop_id).execute()
     return {"success": True}
 
 
 @router.get("/workshops/{workshop_id}/attendance")
-def workshop_attendance(workshop_id: str, date: str = None):
+def workshop_attendance(workshop_id: str, date: str = None, user=Depends(require_admin)):
     sb = supabase_service.get_supabase()
     q = sb.table("attendance").select(
         "*, members(first_name, last_name, email, year, section)"
@@ -293,7 +331,7 @@ def workshop_attendance(workshop_id: str, date: str = None):
 # ── Analytics ─────────────────────────────────────────────────────────────────
 
 @router.get("/analytics/overview")
-def analytics_overview():
+def analytics_overview(user=Depends(require_admin)):
     sb = supabase_service.get_supabase()
 
     total_apps     = sb.table("applications").select("id", count="exact").execute()
@@ -335,7 +373,7 @@ def analytics_overview():
     }
 
 @router.post("/polls")
-def create_poll(p: PollCreate):
+def create_poll(p: PollCreate, user=Depends(require_admin)):
     sb = supabase_service.get_supabase()
     response = sb.table("polls").insert({
         "title":       p.title,
@@ -348,13 +386,13 @@ def create_poll(p: PollCreate):
 
 
 @router.patch("/polls/{poll_id}/activate")
-def toggle_poll(poll_id: str, active: bool):
+def toggle_poll(poll_id: str, active: bool, user=Depends(require_admin)):
     sb = supabase_service.get_supabase()
     sb.table("polls").update({"is_active": active}).eq("id", poll_id).execute()
     return {"success": True}
 
 @router.patch("/members/{member_id}/nfc-written")
-def mark_nfc_written(member_id: str):
+def mark_nfc_written(member_id: str, user=Depends(require_admin)):
     sb = supabase_service.get_supabase()
     from datetime import datetime, timezone
     response = sb.table("members").update({
@@ -366,7 +404,7 @@ def mark_nfc_written(member_id: str):
 
 
 @router.patch("/members/{member_id}/role")
-def update_member_role(member_id: str, payload: RoleUpdate):
+def update_member_role(member_id: str, payload: RoleUpdate, user=Depends(require_admin)):
     if payload.role not in VALID_ROLES:
         raise HTTPException(400, f"Invalid role. Must be one of: {', '.join(VALID_ROLES)}")
 
@@ -386,7 +424,7 @@ def update_member_role(member_id: str, payload: RoleUpdate):
     return {"success": True, "role": payload.role, "label": ROLE_LABELS[payload.role]}
 
 @router.get("/workshops/{workshop_id}/attendance/csv")
-def export_attendance_csv(workshop_id: str, date: str = None):
+def export_attendance_csv(workshop_id: str, date: str = None, user=Depends(require_admin)):
     sb = supabase_service.get_supabase()
     ws = sb.table("workshops").select("title").eq("id", workshop_id).limit(1).execute()
     ws_title = ws.data[0]["title"] if ws.data else "workshop"
@@ -418,7 +456,7 @@ def export_attendance_csv(workshop_id: str, date: str = None):
     )
 
 @router.get("/members/{member_id}/attendance-stats")
-def member_attendance_stats(member_id: str):
+def member_attendance_stats(member_id: str, user=Depends(require_admin)):
     sb = supabase_service.get_supabase()
     rows = sb.table("attendance").select("workshop_id, attend_date").eq("member_id", member_id).execute()
     total_days = len(rows.data or [])

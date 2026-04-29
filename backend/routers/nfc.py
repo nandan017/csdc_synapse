@@ -1,8 +1,9 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 from datetime import datetime, timezone
 from services.supabase_service import get_supabase
 from services.crypto_service import decrypt_uid
+from core.limiter import limiter
 
 router = APIRouter(tags=["nfc"])
 
@@ -44,7 +45,8 @@ def resolve_member(encrypted_uid: str) -> dict:
 # ── Attendance ────────────────────────────────────────────────────────────────
 
 @router.post("/attend")
-def record_attendance(payload: AttendRequest):
+@limiter.limit("10/minute")
+def record_attendance(request: Request, payload: AttendRequest):
     sb = get_supabase()
     member = resolve_member(payload.encrypted_uid)
 
@@ -156,7 +158,8 @@ def attendance_status(workshop_id: str):
 # ── Voting ────────────────────────────────────────────────────────────────────
 
 @router.post("/vote")
-def record_vote(payload: VoteRequest):
+@limiter.limit("10/minute")
+def record_vote(request: Request, payload: VoteRequest):
     """
     Called by the /vote/[poll_id] page when a card is tapped.
     1. Resolve member

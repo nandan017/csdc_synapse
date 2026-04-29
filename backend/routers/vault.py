@@ -1,10 +1,17 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime, timezone
 from services.supabase_service import get_supabase
+from core.auth import require_admin, require_member
+import re
 
 router = APIRouter(prefix="/vault", tags=["vault"])
+
+
+def sanitize_search(s: str) -> str:
+    """Strip characters that could manipulate PostgREST filters."""
+    return re.sub(r'[%.,()\\]', '', s).strip()[:100]
 
 
 class ResourceCreate(BaseModel):
@@ -30,7 +37,9 @@ def list_resources(
     ).eq("is_public", True)
 
     if category: q = q.eq("category", category)
-    if search:   q = q.ilike("title", f"%{search}%")
+    if search:
+        safe = sanitize_search(search)
+        q = q.ilike("title", f"%{safe}%")
 
     rows = q.order("created_at", desc=True).execute()
     data = rows.data or []
@@ -64,9 +73,14 @@ def get_resource(resource_id: str):
 
 
 @router.post("/")
-def create_resource(r: ResourceCreate, uploader_id: str):
-    """uploader_id = member.id, passed from frontend after auth."""
+def create_resource(r: ResourceCreate, user=Depends(require_member)):
+    """Uploader is derived from the authenticated user's JWT — not from the request body."""
     sb = get_supabase()
+
+    # Resolve member_id from auth user
+    member = sb.table("members").select("id").eq("auth_user_id", user.id).limit(1).execute()
+    if not member.data:
+        raise HTTPException(404, "Member profile not found.")
 
     row = sb.table("resources").insert({
         "title":       r.title,
@@ -75,7 +89,7 @@ def create_resource(r: ResourceCreate, uploader_id: str):
         "url":         r.url,
         "tags":        r.tags,
         "is_public":   r.is_public,
-        "uploaded_by": uploader_id,
+        "uploaded_by": member.data[0]["id"],
         "view_count":  0,
         "created_at":  datetime.now(timezone.utc).isoformat(),
     }).execute()
@@ -84,7 +98,7 @@ def create_resource(r: ResourceCreate, uploader_id: str):
 
 
 @router.delete("/{resource_id}")
-def delete_resource(resource_id: str):
+def delete_resource(resource_id: str, user=Depends(require_admin)):
     sb = get_supabase()
     sb.table("resources").delete().eq("id", resource_id).execute()
     return {"success": True}

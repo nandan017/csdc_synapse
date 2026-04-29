@@ -1,13 +1,15 @@
 import bcrypt
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from models.application import ApplicationRequest, ApplicationResponse
 from services import supabase_service, brevo_service
+from core.limiter import limiter
 
 router = APIRouter()
 
 
 @router.post("/register", response_model=ApplicationResponse, status_code=201)
-async def register(payload: ApplicationRequest):
+@limiter.limit("3/hour")
+async def register(request: Request, payload: ApplicationRequest):
 
     # 1. Duplicate check
     if supabase_service.application_exists(payload.email):

@@ -1,22 +1,23 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from datetime import datetime, timezone
 from services.supabase_service import get_supabase
 from services.crypto_service import decrypt_uid
+from core.auth import require_member
 
 router = APIRouter(prefix="/connect", tags=["connect"])
 
 
 class ConnectRequest(BaseModel):
-    my_member_id:      str   # logged-in member
     their_encrypted_uid: str  # scanned from their card
 
 
 @router.post("/")
-def tap_to_connect(payload: ConnectRequest):
+def tap_to_connect(payload: ConnectRequest, user=Depends(require_member)):
     """
     Called when member A taps member B's NFC card.
     Creates a bidirectional connection.
+    Member A is derived from the authenticated JWT — not from the request body.
     """
     try:
         decrypt_uid(payload.their_encrypted_uid)
@@ -24,6 +25,12 @@ def tap_to_connect(payload: ConnectRequest):
         raise HTTPException(404, "Card not recognised.")
 
     sb = get_supabase()
+
+    # Resolve my member_id from JWT
+    me = sb.table("members").select("id, first_name").eq("auth_user_id", user.id).limit(1).execute()
+    if not me.data:
+        raise HTTPException(404, "Your member profile not found.")
+    my_member_id = me.data[0]["id"]
 
     # Find the other member
     other = (
@@ -38,14 +45,14 @@ def tap_to_connect(payload: ConnectRequest):
 
     other_id = other.data[0]["id"]
 
-    if other_id == payload.my_member_id:
+    if other_id == my_member_id:
         raise HTTPException(400, "You can't connect with yourself.")
 
     # Check if already connected
     existing = (
         sb.table("connections")
         .select("id")
-        .eq("member_a", payload.my_member_id)
+        .eq("member_a", my_member_id)
         .eq("member_b", other_id)
         .limit(1)
         .execute()
@@ -62,17 +69,17 @@ def tap_to_connect(payload: ConnectRequest):
 
     # Insert both directions for easy querying
     sb.table("connections").insert([
-        {"member_a": payload.my_member_id, "member_b": other_id, "connected_at": now},
-        {"member_a": other_id, "member_b": payload.my_member_id, "connected_at": now},
+        {"member_a": my_member_id, "member_b": other_id, "connected_at": now},
+        {"member_a": other_id, "member_b": my_member_id, "connected_at": now},
     ]).execute()
 
     # Log activity for both members
-    for mid, oid in [(payload.my_member_id, other_id), (other_id, payload.my_member_id)]:
+    for mid, oid in [(my_member_id, other_id), (other_id, my_member_id)]:
         sb.table("activity").insert({
             "member_id":   mid,
             "type":        "connection",
             "ref_id":      oid,
-            "description": f"Connected with {other.data[0]['first_name'] if mid == payload.my_member_id else 'a new member'}",
+            "description": f"Connected with {other.data[0]['first_name'] if mid == my_member_id else 'a new member'}",
             "created_at":  now,
         }).execute()
 
@@ -85,9 +92,15 @@ def tap_to_connect(payload: ConnectRequest):
 
 
 @router.get("/{member_id}")
-def get_connections(member_id: str):
-    """Get all connections for a member."""
+def get_connections(member_id: str, user=Depends(require_member)):
+    """Get all connections for a member. Validates the requesting user owns this member_id."""
     sb = get_supabase()
+
+    # Verify the authenticated user owns this member_id
+    me = sb.table("members").select("id").eq("auth_user_id", user.id).limit(1).execute()
+    if not me.data or me.data[0]["id"] != member_id:
+        raise HTTPException(403, "You can only view your own connections.")
+
     rows = (
         sb.table("connections")
         .select("connected_at, member_b, members!connections_member_b_fkey(id, first_name, last_name, stream, year, avatar_url, github, linkedin, skills, member_archetype)")

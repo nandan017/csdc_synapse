@@ -60,7 +60,7 @@ export default function ConnectPage() {
 
         const res = await fetch('/api/connect', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ my_member_id: memberId, their_encrypted_uid: uid }),
+          body: JSON.stringify({ their_encrypted_uid: uid }),
         })
         const data = await res.json()
         if (!res.ok) { setError(data.detail || 'Error'); setState('error'); return }

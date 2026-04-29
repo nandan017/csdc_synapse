@@ -1,11 +1,12 @@
 import secrets
 import hashlib
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 from datetime import datetime, timezone, timedelta
 from services.supabase_service import get_supabase
 from services.crypto_service import decrypt_uid
 from services.brevo_service import send_otp_email
+from core.limiter import limiter
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -24,7 +25,8 @@ class NFCLoginRequest(BaseModel):
 # ── OTP: send ────────────────────────────────────────────────────────────────
 
 @router.post("/send-otp")
-async def send_otp(payload: OTPRequest):
+@limiter.limit("3/15minutes")
+async def send_otp(request: Request, payload: OTPRequest):
     sb = get_supabase()
 
     # Check member exists with this email
@@ -59,7 +61,8 @@ async def send_otp(payload: OTPRequest):
 # ── OTP: verify ──────────────────────────────────────────────────────────────
 
 @router.post("/verify-otp")
-def verify_otp(payload: OTPVerify):
+@limiter.limit("5/15minutes")
+def verify_otp(request: Request, payload: OTPVerify):
     sb = get_supabase()
 
     row = sb.table("otp_tokens").select("*").eq("email", payload.email).limit(1).execute()
@@ -88,7 +91,8 @@ def verify_otp(payload: OTPVerify):
 # ── NFC login ─────────────────────────────────────────────────────────────────
 
 @router.post("/nfc-login")
-def nfc_login(payload: NFCLoginRequest):
+@limiter.limit("5/15minutes")
+def nfc_login(request: Request, payload: NFCLoginRequest):
     """
     NFC quick login — no password needed.
     Validates encrypted UID, finds member, creates Supabase session.
@@ -126,4 +130,6 @@ def nfc_login(payload: NFCLoginRequest):
             "member":        {"first_name": m["first_name"], "last_name": m["last_name"]},
         }
     except Exception as e:
-        raise HTTPException(500, f"Session creation failed: {str(e)}")
+        import logging
+        logging.getLogger(__name__).error(f"Session creation failed: {e}")
+        raise HTTPException(500, "Session creation failed. Contact club leads.")
