@@ -10,6 +10,14 @@ export async function getAuthHeaders(request: NextRequest): Promise<Record<strin
     'Content-Type': 'application/json',
   }
 
+  // 1. Prefer client-sent Authorization header (from authFetch)
+  const clientAuth = request.headers.get('Authorization')
+  if (clientAuth) {
+    headers['Authorization'] = clientAuth
+    return headers
+  }
+
+  // 2. Fallback: extract from Supabase session cookie
   try {
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,

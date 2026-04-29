@@ -103,7 +103,7 @@ def get_connections(member_id: str, user=Depends(require_member)):
 
     rows = (
         sb.table("connections")
-        .select("connected_at, member_b, members!connections_member_b_fkey(id, first_name, last_name, stream, year, avatar_url, github, linkedin, skills, member_archetype)")
+        .select("connected_at, member_b, members!connections_member_b_fkey(id, first_name, last_name, stream, year, avatar_url, github, linkedin, skills, member_archetype, encrypted_uid)")
         .eq("member_a", member_id)
         .order("connected_at", desc=True)
         .execute()

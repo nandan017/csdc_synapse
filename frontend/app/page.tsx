@@ -165,12 +165,12 @@ const WORKSHOPS = [
 ]
 
 const TEAM = [
+  { name: 'Prof. Name', role: 'Teacher Coordinator', bio: "Faculty mentor guiding Chathurya's vision at Seshadripuram College." },
   { name: 'Lead 1', role: 'Club Lead', bio: 'Placeholder bio — update with real info.' },
   { name: 'Lead 2', role: 'Co-Lead', bio: 'Placeholder bio — update with real info.' },
   { name: 'Lead 3', role: 'Lead', bio: 'Placeholder bio — update with real info.' },
   { name: 'Lead 4', role: 'Lead', bio: 'Placeholder bio — update with real info.' },
   { name: 'Lead 5', role: 'Lead', bio: 'Placeholder bio — update with real info.' },
-  { name: 'Prof. Name', role: 'Teacher Coordinator', bio: "Faculty mentor guiding Chathurya's vision at Seshadripuram College." },
 ]
 
 const TESTIMONIALS = [
