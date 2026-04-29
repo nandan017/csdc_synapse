@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase'
 
 /* ── Pac-Man Zigzag Component ────────────────────────────────────────── */
 const ZIG_COLS  = 3      // number of zigzag columns
@@ -486,6 +487,27 @@ export default function HomePage() {
   const [pacPos, setPacPos]                 = useState(0)
   const [mouthOpen, setMouthOpen]           = useState(true)
   const [hoveredFeature, setHoveredFeature] = useState<number | null>(null)
+  const [navUser, setNavUser]               = useState<any>(null)
+  const [navAvatar, setNavAvatar]           = useState<string | null>(null)
+  const [navInitials, setNavInitials]       = useState('U')
+
+  // Check if user is logged in for nav avatar
+  useEffect(() => {
+    const sb = createClient()
+    sb.auth.getUser().then(({ data }) => {
+      if (!data.user) return
+      setNavUser(data.user)
+      // Try to get member info for avatar/initials
+      sb.from('members').select('first_name, last_name, avatar_url')
+        .eq('auth_user_id', data.user.id).single()
+        .then(({ data: m }) => {
+          if (m) {
+            setNavAvatar(m.avatar_url)
+            setNavInitials(`${(m.first_name||'U')[0]}${(m.last_name||'')[0]}`)
+          }
+        })
+    })
+  }, [])
 
   // Supabase fallback: if password reset redirect lands here instead of /reset-password
   useEffect(() => {
@@ -557,27 +579,53 @@ export default function HomePage() {
                 {item}
               </a>
             ))}
-            <Link href="/login" style={{
-  fontFamily:'var(--font-syne)',fontWeight:700,fontSize:13,
-  color:'#CFFF00',background:'transparent',
-  padding:'7px 18px',borderRadius:10,
-  border:'1.5px solid #CFFF00',
-  textDecoration:'none',transition:'all .2s',
-  letterSpacing:'-.01em',
-}}
-onMouseEnter={e=>{e.currentTarget.style.background='rgba(207,255,0,0.07)'}}
-onMouseLeave={e=>{e.currentTarget.style.background='transparent'}}>
-  Login
-</Link>
-<Link href="/register" style={{
-  fontFamily:'var(--font-syne)',fontWeight:800,fontSize:13,
-  color:'#000',background:'#CFFF00',padding:'8px 20px',borderRadius:10,
-  textDecoration:'none',transition:'opacity .2s',
-}}
-onMouseEnter={e=>(e.currentTarget.style.opacity='.85')}
-onMouseLeave={e=>(e.currentTarget.style.opacity='1')}>
-  Apply →
-</Link>
+            <Link href="/reaction" className="hide-mobile"
+              style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#ff3333',textDecoration:'none',letterSpacing:'.06em',textTransform:'uppercase',transition:'color .2s',display:'flex',alignItems:'center',gap:5}}
+              onMouseEnter={e=>(e.currentTarget.style.color='#CFFF00')}
+              onMouseLeave={e=>(e.currentTarget.style.color='#ff3333')}>
+              🏎️ Reaction
+            </Link>
+            {navUser ? (
+              <Link href="/dashboard" style={{display:'flex',alignItems:'center',gap:10,textDecoration:'none'}}>
+                <div style={{
+                  width:34,height:34,borderRadius:'50%',
+                  background:'linear-gradient(135deg,#CFFF00,#a8cc00)',
+                  display:'flex',alignItems:'center',justifyContent:'center',
+                  fontFamily:'var(--font-syne)',fontWeight:800,color:'#000',fontSize:12,
+                  overflow:'hidden',border:'2px solid rgba(207,255,0,0.3)',
+                  transition:'border-color .2s',cursor:'pointer',
+                }}>
+                  {navAvatar
+                    // eslint-disable-next-line @next/next/no-img-element
+                    ? <img src={navAvatar} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}} />
+                    : navInitials}
+                </div>
+              </Link>
+            ) : (
+              <>
+                <Link href="/login" style={{
+                  fontFamily:'var(--font-syne)',fontWeight:700,fontSize:13,
+                  color:'#CFFF00',background:'transparent',
+                  padding:'7px 18px',borderRadius:10,
+                  border:'1.5px solid #CFFF00',
+                  textDecoration:'none',transition:'all .2s',
+                  letterSpacing:'-.01em',
+                }}
+                onMouseEnter={e=>{e.currentTarget.style.background='rgba(207,255,0,0.07)'}}
+                onMouseLeave={e=>{e.currentTarget.style.background='transparent'}}>
+                  Login
+                </Link>
+                <Link href="/register" style={{
+                  fontFamily:'var(--font-syne)',fontWeight:800,fontSize:13,
+                  color:'#000',background:'#CFFF00',padding:'8px 20px',borderRadius:10,
+                  textDecoration:'none',transition:'opacity .2s',
+                }}
+                onMouseEnter={e=>(e.currentTarget.style.opacity='.85')}
+                onMouseLeave={e=>(e.currentTarget.style.opacity='1')}>
+                  Apply →
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </nav>

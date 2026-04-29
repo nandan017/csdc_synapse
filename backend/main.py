@@ -32,7 +32,7 @@ app.add_middleware(
 
 # ── Routers ───────────────────────────────────────────────────────────────────
 from routers import register, admin, onboard, profile, nfc, tasks, feedback, vault
-from routers import auth, connect, activity
+from routers import auth, connect, activity, reaction
 
 app.include_router(register.router)
 app.include_router(admin.router)
@@ -45,6 +45,7 @@ app.include_router(vault.router)
 app.include_router(auth.router)
 app.include_router(connect.router)
 app.include_router(activity.router)
+app.include_router(reaction.router)
 
 # ── Health check ──────────────────────────────────────────────────────────────
 @app.get("/health")

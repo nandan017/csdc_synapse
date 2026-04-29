@@ -1299,6 +1299,53 @@ if (curRes.ok) {
           </div>
         </div>
         {/* ══════════════════════════════════════════════════════
+            F1 REACTION TEST CARD
+        ══════════════════════════════════════════════════════ */}
+        <Link href="/reaction" style={{textDecoration:'none'}}>
+          <div style={{
+            background:'#0a0a0a',
+            border:'1px solid #1e1e1e',
+            borderRadius:16, padding:'22px 24px', marginTop:20,
+            animation: revealed ? 'fadeSlideUp .6s .8s cubic-bezier(.16,1,.3,1) forwards' : 'none',
+            opacity:0, position:'relative', overflow:'hidden',
+            display:'flex', alignItems:'center', gap:24,
+            cursor:'pointer', transition:'border-color .2s',
+          }}
+            onMouseEnter={(e:any)=>e.currentTarget.style.borderColor='rgba(207,255,0,0.3)'}
+            onMouseLeave={(e:any)=>e.currentTarget.style.borderColor='#1e1e1e'}
+          >
+            {/* Mini F1 lights */}
+            <div style={{display:'flex',gap:8,flexShrink:0}}>
+              {[0,1,2,3,4].map(i=>(
+                <div key={i} style={{
+                  width:18,height:18,borderRadius:'50%',
+                  background:i<3?'radial-gradient(circle, #ff1a1a 30%, #cc0000 100%)':'#111',
+                  border:`1.5px solid ${i<3?'#ff3333':'#1e1e1e'}`,
+                  boxShadow:i<3?'0 0 8px rgba(255,26,26,0.4)':'none',
+                }} />
+              ))}
+            </div>
+            {/* Text */}
+            <div style={{flex:1}}>
+              <div style={{fontFamily:'var(--font-syne)',fontWeight:800,color:'#fff',fontSize:15,letterSpacing:'-.02em',marginBottom:2}}>
+                🏎️ F1 Reaction Test
+              </div>
+              <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#383838',letterSpacing:'.04em'}}>
+                Test your reflexes against the F1 countdown lights
+              </div>
+            </div>
+            {/* CTA */}
+            <div style={{
+              fontFamily:'var(--font-syne)',fontWeight:800,fontSize:12,
+              color:'#000',background:'#CFFF00',
+              padding:'8px 18px',borderRadius:8,flexShrink:0,
+              letterSpacing:'-.01em',
+            }}>
+              Play →
+            </div>
+          </div>
+        </Link>
+        {/* ══════════════════════════════════════════════════════
     CURRENT / ONGOING WORKSHOPS
 ══════════════════════════════════════════════════════ */}
 <div style={{
