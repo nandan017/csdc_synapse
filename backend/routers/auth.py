@@ -95,8 +95,7 @@ def verify_otp(request: Request, payload: OTPVerify):
 def nfc_login(request: Request, payload: NFCLoginRequest):
     """
     NFC quick login — no password needed.
-    Validates encrypted UID, finds member, creates Supabase session
-    via generate_link (magiclink) + verify_otp.
+    Validates encrypted UID, finds member, creates Supabase session.
     """
     try:
         decrypt_uid(payload.encrypted_uid)
@@ -120,47 +119,16 @@ def nfc_login(request: Request, payload: NFCLoginRequest):
     if not m.get("auth_user_id"):
         raise HTTPException(400, "Member account not fully set up. Use email login.")
 
-    # Create session via generate_link + verify_otp
-    # (admin.create_session is not available in supabase-py v2.5 / gotrue v2.12)
+    # Create session via Supabase admin
     try:
-        from urllib.parse import urlparse, parse_qs
-        import logging
-        logger = logging.getLogger(__name__)
-
-        # Step 1: Generate a magic link (server-side only, never sent to user)
-        link_resp = sb.auth.admin.generate_link({
-            "type": "magiclink",
-            "email": m["email"],
+        session = sb.auth.admin.create_session({
+            "user_id": m["auth_user_id"],
         })
-
-        # Step 2: Extract token_hash from the generated action link
-        action_link = link_resp.properties.action_link
-        parsed = urlparse(action_link)
-        query_params = parse_qs(parsed.query)
-        token_hash = query_params.get("token_hash", [None])[0]
-
-        if not token_hash:
-            # Fallback: try fragment-based token
-            fragment_params = parse_qs(parsed.fragment)
-            token_hash = fragment_params.get("token_hash", [None])[0]
-
-        if not token_hash:
-            logger.error(f"No token_hash found in action_link: {action_link}")
-            raise HTTPException(500, "Session creation failed. Contact club leads.")
-
-        # Step 3: Verify the OTP token to get a real session
-        session_resp = sb.auth.verify_otp({
-            "type": "magiclink",
-            "token_hash": token_hash,
-        })
-
         return {
-            "access_token":  session_resp.session.access_token,
-            "refresh_token": session_resp.session.refresh_token,
+            "access_token":  session.session.access_token,
+            "refresh_token": session.session.refresh_token,
             "member":        {"first_name": m["first_name"], "last_name": m["last_name"]},
         }
-    except HTTPException:
-        raise
     except Exception as e:
         import logging
         logging.getLogger(__name__).error(f"Session creation failed: {e}")
