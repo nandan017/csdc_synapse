@@ -165,12 +165,12 @@ const WORKSHOPS = [
 ]
 
 const TEAM = [
-  { name: 'Prof. Name', role: 'Teacher Coordinator', bio: "Faculty mentor guiding Chathurya's vision at Seshadripuram College." },
-  { name: 'Lead 1', role: 'Club Lead', bio: 'Placeholder bio — update with real info.' },
-  { name: 'Lead 2', role: 'Co-Lead', bio: 'Placeholder bio — update with real info.' },
-  { name: 'Lead 3', role: 'Lead', bio: 'Placeholder bio — update with real info.' },
-  { name: 'Lead 4', role: 'Lead', bio: 'Placeholder bio — update with real info.' },
-  { name: 'Lead 5', role: 'Lead', bio: 'Placeholder bio — update with real info.' },
+  { name: 'Prof. Shivaswamy D.S.', role: 'Teacher Coordinator', bio: "Faculty mentor guiding Chathurya's vision at Seshadripuram College." },
+  { name: 'Nandan A', role: 'Club Lead', bio: 'Serial debugger 🐞' },
+  { name: 'Chethan P', role: 'Lead', bio: 'Creating a legacy with every line of code.' },
+  { name: 'Laxmi M', role: 'Lead', bio: 'Coding in sync, one commit at a time.' },
+  { name: 'Shashank M Dulboji', role: 'Co-Lead', bio: 'Coding is my favourite pastime.' },
+  { name: 'Haresh R', role: 'Co-Lead', bio: 'Data Analysis aficionado!.' },
 ]
 
 const TESTIMONIALS = [
