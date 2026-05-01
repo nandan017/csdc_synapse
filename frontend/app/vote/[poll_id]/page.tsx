@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useParams } from 'next/navigation'
+import Cursor from '@/components/Cursor'
 
 type State = 'loading' | 'inactive' | 'select' | 'scanning' | 'success' | 'duplicate' | 'error'
 
@@ -161,14 +162,17 @@ export default function VotePage() {
           border:2px solid rgba(207,255,0,0.4);
           animation:ping 1.4s cubic-bezier(0,0,.2,1) infinite;
         }
+        @media (pointer: coarse) { body { cursor: auto !important; } * { cursor: auto !important; } }
       `}</style>
+
+      <Cursor />
 
       {/* Header */}
       <div style={{textAlign:'center', marginBottom:32, width:'100%'}}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/logo.png" alt="" style={{width:28,height:28,objectFit:'contain',
           filter:'drop-shadow(0 0 8px rgba(207,255,0,0.4))',marginBottom:10}} />
-        <div style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#2a2a2a',
+        <div style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#666',
           letterSpacing:'.15em',textTransform:'uppercase'}}>
           CHATHURYA SDC · LIVE POLL
         </div>
@@ -184,8 +188,8 @@ export default function VotePage() {
       {state === 'inactive' && (
         <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',textAlign:'center'}}>
           <div style={{fontSize:36,marginBottom:16}}>⏸</div>
-          <div style={{fontFamily:'var(--font-syne)',fontWeight:800,color:'#333',fontSize:20}}>Poll is not active</div>
-          <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#2a2a2a',letterSpacing:'.06em',marginTop:8}}>
+          <div style={{fontFamily:'var(--font-syne)',fontWeight:800,color:'#555',fontSize:20}}>Poll is not active</div>
+          <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#666',letterSpacing:'.06em',marginTop:8}}>
             Activate from admin dashboard
           </div>
         </div>
@@ -201,11 +205,11 @@ export default function VotePage() {
               {poll.title}
             </h1>
             {poll.description && (
-              <p style={{color:'#444',fontSize:13,lineHeight:1.7,fontFamily:'var(--font-dm-sans)'}}>
+              <p style={{color:'#666',fontSize:13,lineHeight:1.7,fontFamily:'var(--font-dm-sans)'}}>
                 {poll.description}
               </p>
             )}
-            <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#2a2a2a',marginTop:8,letterSpacing:'.06em'}}>
+            <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#666',marginTop:8,letterSpacing:'.06em'}}>
               {totalVotes} vote{totalVotes !== 1 ? 's' : ''} cast
             </div>
           </div>
@@ -213,7 +217,7 @@ export default function VotePage() {
           {/* Options */}
           {state === 'select' && (
             <div style={{display:'flex',flexDirection:'column',gap:10,marginBottom:24}}>
-              <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#444',
+              <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#666',
                 letterSpacing:'.1em',textTransform:'uppercase',marginBottom:4}}>
                 Select your choice, then tap your card
               </div>
@@ -223,7 +227,7 @@ export default function VotePage() {
                   onClick={() => handleOptionSelect(opt.id)}>
                   <span>{opt.label}</span>
                   <span style={{fontFamily:'var(--font-jetbrains)',fontSize:10,
-                    color: selected===opt.id ? '#CFFF00' : '#333'}}>
+                    color: selected===opt.id ? '#CFFF00' : '#555'}}>
                     {poll.vote_counts[opt.id] ?? 0}
                   </span>
                 </button>
@@ -250,7 +254,7 @@ export default function VotePage() {
               </div>
               {selected && poll && (
                 <div style={{textAlign:'center'}}>
-                  <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#444',
+                  <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#666',
                     letterSpacing:'.06em',marginBottom:4}}>Voting for</div>
                   <div style={{fontFamily:'var(--font-syne)',fontWeight:800,color:'#CFFF00',fontSize:18}}>
                     {poll.options.find(o => o.id === selected)?.label}
@@ -259,7 +263,7 @@ export default function VotePage() {
               )}
               <button onClick={() => { setSelected(null); setState('select') }}
                 style={{background:'transparent',border:'1px solid #1a1a1a',borderRadius:8,
-                  color:'#333',fontFamily:'var(--font-jetbrains)',fontSize:10,
+                  color:'#555',fontFamily:'var(--font-jetbrains)',fontSize:10,
                   padding:'7px 16px',cursor:'none',letterSpacing:'.04em'}}>
                 Cancel
               </button>
@@ -276,7 +280,7 @@ export default function VotePage() {
               <div style={{fontFamily:'var(--font-jetbrains)',fontSize:12,color:'#555',marginBottom:4}}>
                 {memberName}
               </div>
-              <div style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#444',letterSpacing:'.04em'}}>
+              <div style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#666',letterSpacing:'.04em'}}>
                 {resultMsg}
               </div>
             </div>
@@ -290,7 +294,7 @@ export default function VotePage() {
               <div style={{fontFamily:'var(--font-syne)',fontWeight:800,color:'#555',fontSize:20,marginBottom:6}}>
                 Already voted
               </div>
-              <div style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#444',letterSpacing:'.04em'}}>
+              <div style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#666',letterSpacing:'.04em'}}>
                 {memberName}
               </div>
             </div>
@@ -309,7 +313,7 @@ export default function VotePage() {
           {/* Live tally */}
           {(state === 'select') && totalVotes > 0 && (
             <div style={{marginTop:'auto',paddingTop:20,borderTop:'1px solid #111'}}>
-              <div style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#2a2a2a',
+              <div style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#666',
                 letterSpacing:'.1em',textTransform:'uppercase',marginBottom:10}}>
                 Live tally
               </div>
@@ -319,7 +323,7 @@ export default function VotePage() {
                 return (
                   <div key={opt.id} style={{marginBottom:8}}>
                     <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
-                      <span style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#444'}}>{opt.label}</span>
+                      <span style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#666'}}>{opt.label}</span>
                       <span style={{fontFamily:'var(--font-syne)',fontWeight:700,color:'#CFFF00',fontSize:11}}>{pct}%</span>
                     </div>
                     <div style={{height:3,background:'#111',borderRadius:2,overflow:'hidden'}}>

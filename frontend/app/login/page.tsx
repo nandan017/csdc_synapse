@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import Link from 'next/link'
+import Cursor from '@/components/Cursor'
 
 type Step = 'login' | 'otp' | 'forgot' | 'forgot_sent'
 
@@ -143,8 +144,12 @@ export default function LoginPage() {
         .ifield:focus{border-color:rgba(207,255,0,0.4)}
         .pbtn{width:100%;padding:13px;background:#CFFF00;color:#000;border:none;border-radius:10px;font-family:var(--font-syne);font-weight:800;font-size:14px;cursor:none;transition:opacity .2s;letter-spacing:-.01em}
         .pbtn:hover{opacity:.88}
-        .pbtn:disabled{background:#1e1e1e;color:#333;cursor:not-allowed}
+        .pbtn:disabled{background:#1e1e1e;color:#555;cursor:not-allowed}
+        @media (pointer: coarse) { body { cursor: auto !important; } * { cursor: auto !important; } }
+        @media (max-width: 480px) { .ifield { font-size: 16px !important; } }
       `}</style>
+
+      <Cursor />
 
       {/* Logo */}
       <div style={{textAlign:'center',marginBottom:32,animation:'fadeUp .5s ease'}}>
@@ -155,7 +160,7 @@ export default function LoginPage() {
         <div style={{fontFamily:'var(--font-syne)',fontWeight:800,color:'#fff',fontSize:18,letterSpacing:'-.03em'}}>
           {step === 'forgot' || step === 'forgot_sent' ? 'Reset Password' : 'Member Login'}
         </div>
-        <div style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#333',letterSpacing:'.1em',marginTop:4,textTransform:'uppercase'}}>
+        <div style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#666',letterSpacing:'.1em',marginTop:4,textTransform:'uppercase'}}>
           Chathurya SDC
         </div>
       </div>
@@ -168,7 +173,7 @@ export default function LoginPage() {
 
             {nfcReady && (
               <div style={{marginBottom:24}}>
-                <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#444',letterSpacing:'.1em',textTransform:'uppercase',marginBottom:12,textAlign:'center'}}>
+                <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#666',letterSpacing:'.1em',textTransform:'uppercase',marginBottom:12,textAlign:'center'}}>
                   Quick login
                 </div>
                 <button onClick={startNFCLogin} disabled={nfcScanning} style={{
@@ -194,7 +199,7 @@ export default function LoginPage() {
                 </button>
                 <div style={{display:'flex',alignItems:'center',gap:12,margin:'20px 0'}}>
                   <div style={{flex:1,height:1,background:'#111'}} />
-                  <span style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#333',letterSpacing:'.06em'}}>or</span>
+                  <span style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#555',letterSpacing:'.06em'}}>or</span>
                   <div style={{flex:1,height:1,background:'#111'}} />
                 </div>
               </div>
@@ -210,7 +215,7 @@ export default function LoginPage() {
                   <label style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#555',letterSpacing:'.08em',textTransform:'uppercase'}}>Password</label>
                   <button type="button"
                     onClick={()=>{setResetEmail(email);setStep('forgot');setError('')}}
-                    style={{background:'none',border:'none',cursor:'none',fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#444',textDecoration:'underline',transition:'color .2s'}}
+                    style={{background:'none',border:'none',cursor:'none',fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#666',textDecoration:'underline',transition:'color .2s'}}
                     onMouseEnter={e=>(e.currentTarget.style.color='#CFFF00')}
                     onMouseLeave={e=>(e.currentTarget.style.color='#444')}>
                     Forgot password?
@@ -220,7 +225,7 @@ export default function LoginPage() {
                   <input type={showPwd?'text':'password'} value={password} onChange={e=>setPassword(e.target.value)}
                     required placeholder="••••••••" className="ifield" style={{paddingRight:52}} />
                   <button type="button" onClick={()=>setShowPwd(p=>!p)}
-                    style={{position:'absolute',right:14,top:'50%',transform:'translateY(-50%)',background:'none',border:'none',cursor:'none',fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#444'}}>
+                    style={{position:'absolute',right:14,top:'50%',transform:'translateY(-50%)',background:'none',border:'none',cursor:'none',fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#666'}}>
                     {showPwd?'hide':'show'}
                   </button>
                 </div>
@@ -239,7 +244,7 @@ export default function LoginPage() {
             <div style={{textAlign:'center',marginBottom:24}}>
               <div style={{fontSize:36,marginBottom:12}}>📬</div>
               <h2 style={{fontFamily:'var(--font-syne)',fontWeight:800,color:'#fff',fontSize:18,letterSpacing:'-.03em',marginBottom:6}}>Check your email</h2>
-              <p style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#444',lineHeight:1.7}}>
+              <p style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#666',lineHeight:1.7}}>
                 6-digit code sent to<br/><span style={{color:'#CFFF00'}}>{email}</span>
               </p>
             </div>
@@ -252,12 +257,12 @@ export default function LoginPage() {
               <button type="submit" disabled={loading||otp.length<6} className="pbtn">{loading?'Verifying...':'Verify →'}</button>
               <div style={{textAlign:'center'}}>
                 {otpTimer>0
-                  ? <span style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#2a2a2a'}}>Resend in {otpTimer}s</span>
+                  ? <span style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#666'}}>Resend in {otpTimer}s</span>
                   : <button type="button" onClick={resendOTP} style={{background:'none',border:'none',cursor:'none',fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#555',textDecoration:'underline'}}>Resend code</button>
                 }
               </div>
               <button type="button" onClick={()=>{setStep('login');setError('');setOtp('')}}
-                style={{background:'none',border:'none',cursor:'none',fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#333',textAlign:'center'}}>
+                style={{background:'none',border:'none',cursor:'none',fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#666',textAlign:'center'}}>
                 ← Back
               </button>
             </form>
@@ -270,7 +275,7 @@ export default function LoginPage() {
             <div style={{textAlign:'center',marginBottom:24}}>
               <div style={{fontSize:36,marginBottom:12}}>🔑</div>
               <h2 style={{fontFamily:'var(--font-syne)',fontWeight:800,color:'#fff',fontSize:18,letterSpacing:'-.03em',marginBottom:6}}>Reset your password</h2>
-              <p style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#444',lineHeight:1.7}}>Enter your email — we'll send a reset link.</p>
+              <p style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#666',lineHeight:1.7}}>Enter your email — we'll send a reset link.</p>
             </div>
             <form onSubmit={handleForgotPassword} style={{display:'flex',flexDirection:'column',gap:14}}>
               <div>
@@ -281,7 +286,7 @@ export default function LoginPage() {
               {error && <div style={{padding:'9px 14px',background:'rgba(255,64,64,0.06)',border:'1px solid rgba(255,64,64,0.2)',borderRadius:8,fontFamily:'var(--font-jetbrains)',fontSize:12,color:'#ff6b6b'}}>{error}</div>}
               <button type="submit" disabled={loading} className="pbtn">{loading?'Sending...':'Send Reset Link →'}</button>
               <button type="button" onClick={()=>{setStep('login');setError('')}}
-                style={{background:'none',border:'none',cursor:'none',fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#333',textAlign:'center'}}>
+                style={{background:'none',border:'none',cursor:'none',fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#666',textAlign:'center'}}>
                 ← Back to login
               </button>
             </form>
@@ -293,7 +298,7 @@ export default function LoginPage() {
           <div style={{background:'#0a0a0a',border:'1px solid rgba(207,255,0,0.15)',borderRadius:18,padding:32,animation:'fadeUp .4s ease',textAlign:'center'}}>
             <div style={{fontSize:40,marginBottom:16}}>✉️</div>
             <h2 style={{fontFamily:'var(--font-syne)',fontWeight:800,color:'#CFFF00',fontSize:20,letterSpacing:'-.03em',marginBottom:8}}>Reset link sent!</h2>
-            <p style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#444',lineHeight:1.8,marginBottom:24}}>
+            <p style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#666',lineHeight:1.8,marginBottom:24}}>
               Check your inbox at<br/><span style={{color:'#888'}}>{resetEmail}</span><br/><br/>
               Click the link to set a new password. Expires in 1 hour.
             </p>
@@ -306,7 +311,7 @@ export default function LoginPage() {
           </div>
         )}
 
-        <div style={{textAlign:'center',marginTop:20,fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#2a2a2a',letterSpacing:'.06em'}}>
+        <div style={{textAlign:'center',marginTop:20,fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#666',letterSpacing:'.06em'}}>
           Not a member? <Link href="/register" style={{color:'#CFFF00',textDecoration:'none'}}>Apply here →</Link>
         </div>
       </div>

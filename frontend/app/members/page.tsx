@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
+import Cursor from '@/components/Cursor'
 
 interface Member {
   id: string
@@ -81,31 +82,44 @@ export default function MembersDirectory() {
           padding:20px; transition:all .22s; display:flex; flex-direction:column; gap:12px;
         }
         .member-card:hover { border-color:rgba(207,255,0,0.2); transform:translateY(-2px); background:rgba(207,255,0,0.02); }
+        @media (pointer: coarse) { body { cursor: auto !important; } * { cursor: auto !important; } }
+        @media (max-width: 768px) {
+          .m-nav { padding: 12px 16px !important; }
+          .m-content { padding: 24px 16px !important; }
+          .m-grid { grid-template-columns: 1fr !important; }
+          .m-nav-right { gap: 8px !important; }
+        }
+        @media (max-width: 480px) {
+          .m-filters { flex-direction: column !important; align-items: stretch !important; }
+          .m-filters input { width: 100% !important; margin-left: 0 !important; }
+        }
       `}</style>
 
+      <Cursor />
+
       {/* Navbar */}
-      <nav style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(8,8,8,0.92)', backdropFilter: 'blur(16px)', borderBottom: '1px solid #111', padding: '14px 40px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <nav className="m-nav" style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(8,8,8,0.92)', backdropFilter: 'blur(16px)', borderBottom: '1px solid #111', padding: '14px 40px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo.png" alt="" style={{ width: 24, height: 24, objectFit: 'contain' }} />
           <span style={{ fontFamily: 'var(--font-syne)', fontWeight: 800, color: '#fff', fontSize: 14, letterSpacing: '-.02em' }}>Chathurya</span>
         </Link>
-        <div style={{ fontFamily: 'var(--font-jetbrains)', fontSize: 10, color: '#333', letterSpacing: '.1em', textTransform: 'uppercase' }}>
+        <div style={{ fontFamily: 'var(--font-jetbrains)', fontSize: 10, color: '#666', letterSpacing: '.1em', textTransform: 'uppercase' }}>
           Member Directory
         </div>
-        <div style={{ display: 'flex', gap: 12 }}>
+        <div className="m-nav-right" style={{ display: 'flex', gap: 12 }}>
           {myId && (
             <Link href="/connect" style={{ fontFamily: 'var(--font-jetbrains)', fontSize: 11, color: '#CFFF00', textDecoration: 'none', border: '1px solid rgba(207,255,0,0.2)', padding: '6px 14px', borderRadius: 7 }}>
               🃏 Tap to Connect
             </Link>
           )}
-          <Link href="/dashboard" style={{ fontFamily: 'var(--font-jetbrains)', fontSize: 11, color: '#444', textDecoration: 'none', border: '1px solid #1e1e1e', padding: '6px 14px', borderRadius: 7 }}>
+          <Link href="/dashboard" style={{ fontFamily: 'var(--font-jetbrains)', fontSize: 11, color: '#666', textDecoration: 'none', border: '1px solid #1e1e1e', padding: '6px 14px', borderRadius: 7 }}>
             Dashboard
           </Link>
         </div>
       </nav>
 
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '48px 40px' }}>
+      <div className="m-content" style={{ maxWidth: 1200, margin: '0 auto', padding: '48px 40px' }}>
 
         {/* Header */}
         <div style={{ marginBottom: 36, animation: 'fadeUp .5s ease' }}>
@@ -121,7 +135,7 @@ export default function MembersDirectory() {
         </div>
 
         {/* Filters */}
-        <div style={{ display: 'flex', gap: 12, marginBottom: 28, flexWrap: 'wrap', alignItems: 'center' }}>
+        <div className="m-filters" style={{ display: 'flex', gap: 12, marginBottom: 28, flexWrap: 'wrap', alignItems: 'center' }}>
           {/* Stream */}
           <div style={{ display: 'flex', gap: 5 }}>
             {STREAMS.map(s => (
@@ -161,14 +175,14 @@ export default function MembersDirectory() {
 
         {/* Grid */}
         {loading ? (
-          <div style={{ textAlign: 'center', padding: 80, color: '#2a2a2a', fontFamily: 'var(--font-jetbrains)', fontSize: 12 }}>Loading...</div>
+          <div style={{ textAlign: 'center', padding: 80, color: '#666', fontFamily: 'var(--font-jetbrains)', fontSize: 12 }}>Loading...</div>
         ) : members.length === 0 ? (
           <div style={{ textAlign: 'center', padding: 80 }}>
             <div style={{ fontSize: 36, marginBottom: 16, opacity: .3 }}>◉</div>
-            <div style={{ fontFamily: 'var(--font-jetbrains)', fontSize: 12, color: '#2a2a2a' }}>No members match your filter</div>
+            <div style={{ fontFamily: 'var(--font-jetbrains)', fontSize: 12, color: '#666' }}>No members match your filter</div>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 14 }}>
+          <div className="m-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 14 }}>
             {members.map((m, i) => (
               <div key={m.id} className="member-card" style={{ animationDelay: `${i * 0.04}s` }}>
 
@@ -194,19 +208,19 @@ export default function MembersDirectory() {
                       {m.first_name} {m.last_name}
                       {m.id === myId && <span style={{ fontFamily: 'var(--font-jetbrains)', fontSize: 8, color: '#CFFF00', marginLeft: 6 }}>(you)</span>}
                     </div>
-                    <div style={{ fontFamily: 'var(--font-jetbrains)', fontSize: 9, color: '#383838', marginTop: 2, letterSpacing: '.04em' }}>
+                    <div style={{ fontFamily: 'var(--font-jetbrains)', fontSize: 9, color: '#777', marginTop: 2, letterSpacing: '.04em' }}>
                       {m.member_archetype ?? m.stream} · {m.year === 1 ? '1st' : m.year === 2 ? '2nd' : '3rd'} Year · {m.section}
                     </div>
                   </div>
 
                   <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 800, color: '#CFFF00', fontSize: 14, flexShrink: 0 }}>
-                    {m.xp}<span style={{ fontFamily: 'var(--font-jetbrains)', fontSize: 8, color: '#2a2a2a', marginLeft: 2 }}>XP</span>
+                    {m.xp}<span style={{ fontFamily: 'var(--font-jetbrains)', fontSize: 8, color: '#666', marginLeft: 2 }}>XP</span>
                   </div>
                 </div>
 
                 {/* Bio */}
                 {m.bio && (
-                  <p style={{ color: '#444', fontSize: 12, lineHeight: 1.65, margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                  <p style={{ color: '#777', fontSize: 12, lineHeight: 1.65, margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                     {m.bio}
                   </p>
                 )}
@@ -217,12 +231,12 @@ export default function MembersDirectory() {
                     {m.skills.slice(0, 4).map(s => (
                       <span key={s} style={{
                         fontFamily: 'var(--font-jetbrains)', fontSize: 9,
-                        color: skill && s.toLowerCase().includes(skill.toLowerCase()) ? '#CFFF00' : '#383838',
+                        color: skill && s.toLowerCase().includes(skill.toLowerCase()) ? '#CFFF00' : '#777',
                         border: `1px solid ${skill && s.toLowerCase().includes(skill.toLowerCase()) ? 'rgba(207,255,0,0.3)' : '#1a1a1a'}`,
                         padding: '2px 8px', borderRadius: 99, transition: 'all .2s',
                       }}>{s}</span>
                     ))}
-                    {m.skills.length > 4 && <span style={{ fontFamily: 'var(--font-jetbrains)', fontSize: 9, color: '#2a2a2a' }}>+{m.skills.length - 4}</span>}
+                    {m.skills.length > 4 && <span style={{ fontFamily: 'var(--font-jetbrains)', fontSize: 9, color: '#666' }}>+{m.skills.length - 4}</span>}
                   </div>
                 )}
 
@@ -236,13 +250,13 @@ export default function MembersDirectory() {
                   )}
                   {m.github && (
                     <a href={`https://github.com/${m.github}`} target="_blank" rel="noopener noreferrer"
-                      style={{ padding: '7px 12px', background: 'transparent', border: '1px solid #1a1a1a', borderRadius: 8, color: '#444', fontFamily: 'var(--font-jetbrains)', fontSize: 10, textDecoration: 'none' }}>
+                      style={{ padding: '7px 12px', background: 'transparent', border: '1px solid #1a1a1a', borderRadius: 8, color: '#666', fontFamily: 'var(--font-jetbrains)', fontSize: 10, textDecoration: 'none' }}>
                       GH
                     </a>
                   )}
                   {m.linkedin && (
                     <a href={`https://linkedin.com/in/${m.linkedin}`} target="_blank" rel="noopener noreferrer"
-                      style={{ padding: '7px 12px', background: 'transparent', border: '1px solid #1a1a1a', borderRadius: 8, color: '#444', fontFamily: 'var(--font-jetbrains)', fontSize: 10, textDecoration: 'none' }}>
+                      style={{ padding: '7px 12px', background: 'transparent', border: '1px solid #1a1a1a', borderRadius: 8, color: '#666', fontFamily: 'var(--font-jetbrains)', fontSize: 10, textDecoration: 'none' }}>
                       LI
                     </a>
                   )}

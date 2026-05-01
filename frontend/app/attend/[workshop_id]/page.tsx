@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useParams } from 'next/navigation'
+import Cursor from '@/components/Cursor'
 
 type State = 'loading' | 'inactive' | 'ready' | 'scanning' | 'success' | 'late' | 'duplicate' | 'error'
 
@@ -202,7 +203,10 @@ export default function AttendancePage() {
         .tap-result {
           animation:popIn .35s cubic-bezier(.16,1,.3,1) forwards;
         }
+        @media (pointer: coarse) { body { cursor: auto !important; } * { cursor: auto !important; } }
       `}</style>
+
+      <Cursor />
 
       {/* Header */}
       <div style={{textAlign:'center', width:'100%'}}>
@@ -213,7 +217,7 @@ export default function AttendancePage() {
         {workshop && (
           <div style={{
             fontFamily:'var(--font-jetbrains)', fontSize:11,
-            color:'#333', letterSpacing:'.08em', textTransform:'uppercase',
+            color:'#666', letterSpacing:'.08em', textTransform:'uppercase',
           }}>
             {workshop.title}
           </div>
@@ -286,16 +290,16 @@ export default function AttendancePage() {
         {/* State label */}
         <div style={{textAlign:'center'}}>
           {state === 'loading' && (
-            <p style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#333',letterSpacing:'.1em'}}>
+            <p style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#666',letterSpacing:'.1em'}}>
               LOADING...
             </p>
           )}
           {state === 'inactive' && (
             <>
-              <p style={{fontFamily:'var(--font-syne)',fontWeight:800,color:'#333',fontSize:18,marginBottom:8}}>
+              <p style={{fontFamily:'var(--font-syne)',fontWeight:800,color:'#555',fontSize:18,marginBottom:8}}>
                 Workshop not active
               </p>
-              <p style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#2a2a2a',letterSpacing:'.06em'}}>
+              <p style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#666',letterSpacing:'.06em'}}>
                 Activate it from the admin dashboard
               </p>
             </>
@@ -307,7 +311,7 @@ export default function AttendancePage() {
           )}
           {state === 'scanning' && cooldown && (
   <p style={{fontFamily:'var(--font-jetbrains)',fontSize:10,
-    color:'#333',letterSpacing:'.06em',marginTop:8}}>
+    color:'#555',letterSpacing:'.06em',marginTop:8}}>
     Cooldown — ready in a moment...
   </p>
 )}
@@ -336,7 +340,7 @@ export default function AttendancePage() {
               <p style={{fontFamily:'var(--font-syne)',fontWeight:800,color:'#555',fontSize:20,marginBottom:4}}>
                 {result.member?.first_name}
               </p>
-              <p style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#444',letterSpacing:'.04em'}}>
+              <p style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#666',letterSpacing:'.04em'}}>
                 Already checked in
               </p>
             </div>
@@ -353,7 +357,7 @@ export default function AttendancePage() {
               <p style={{fontFamily:'var(--font-syne)',fontWeight:700,color:'#ff4040',fontSize:16,marginBottom:8}}>
                 NFC not supported
               </p>
-              <p style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#444',letterSpacing:'.04em',lineHeight:1.7}}>
+              <p style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#666',letterSpacing:'.04em',lineHeight:1.7}}>
                 Use Chrome on an Android phone with NFC enabled
               </p>
             </div>
@@ -364,12 +368,12 @@ export default function AttendancePage() {
       {/* Footer */}
       <div style={{
         fontFamily:'var(--font-jetbrains)', fontSize:9,
-        color:'#1e1e1e', letterSpacing:'.1em', textTransform:'uppercase',
+        color:'#555', letterSpacing:'.1em', textTransform:'uppercase',
         textAlign:'center',
       }}>
         Chathurya SDC · NFC Attendance
         {workshop && (
-          <div style={{marginTop:4,color:'#1a1a1a'}}>
+          <div style={{marginTop:4,color:'#555'}}>
             +{workshop.xp_for_attend} XP per tap
           </div>
         )}

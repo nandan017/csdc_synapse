@@ -3,6 +3,7 @@ import { Suspense } from 'react'
 import { useEffect, useState, useRef } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
+import Cursor from '@/components/Cursor'
 
 /* ── Types ───────────────────────────────────────────────────────────────── */
 interface AppData {
@@ -68,17 +69,7 @@ function OnboardContent() {
       .catch(() => { setInvalidMsg('Could not verify your invite. Try again.'); setStep('invalid') })
   }, [token])
 
-  const dotRef = useRef<HTMLDivElement>(null)
-    useEffect(() => {
-      const onMove = (e: MouseEvent) => {
-        if (dotRef.current) {
-          dotRef.current.style.left = e.clientX + 'px'
-          dotRef.current.style.top = e.clientY + 'px'
-        }
-      }
-      window.addEventListener('mousemove', onMove)
-      return () => window.removeEventListener('mousemove', onMove)
-    }, [])  
+
 
   /* ── Skills ── */
   const addSkill = (s: string) => {
@@ -158,11 +149,7 @@ function OnboardContent() {
       fontFamily:'var(--font-dm-sans)', padding:'40px 20px',
     }}>
 
-    <div ref={dotRef} style={{
-  position:'fixed', zIndex:9999, pointerEvents:'none',
-  width:6, height:6, borderRadius:'50%', background:'#CFFF00',
-  transform:'translate(-50%,-50%)', mixBlendMode:'screen',
-}} />
+    <Cursor />
 
 
       {/* Top bar */}
@@ -186,7 +173,7 @@ function OnboardContent() {
         <div style={{fontFamily:'var(--font-syne)',fontWeight:800,color:'#fff',fontSize:16,letterSpacing:'-.02em'}}>
           Chathurya
         </div>
-        <div style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#444',letterSpacing:'.1em',marginTop:2}}>
+        <div style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#666',letterSpacing:'.1em',marginTop:2}}>
           Member Onboarding
         </div>
       </div>
@@ -234,7 +221,7 @@ function OnboardContent() {
             background:'#0a0a0a', borderRadius:10, border:'1px solid #1e1e1e',
             padding:'14px 16px', marginBottom:24,
           }}>
-            <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#444',letterSpacing:'.1em',textTransform:'uppercase',marginBottom:10}}>
+            <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#666',letterSpacing:'.1em',textTransform:'uppercase',marginBottom:10}}>
               From your application
             </div>
             <div className="onboard-info-grid" style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'6px 20px'}}>
@@ -255,7 +242,7 @@ function OnboardContent() {
 
           {/* Bio */}
           <div style={{marginBottom:18}}>
-            <Label>Bio <span style={{color:'#383838',fontWeight:400}}>(optional)</span></Label>
+            <Label>Bio <span style={{color:'#666',fontWeight:400}}>(optional)</span></Label>
             <textarea
               value={bio}
               onChange={e => setBio(e.target.value)}

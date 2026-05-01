@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import Link from 'next/link'
+import Cursor from '@/components/Cursor'
 
 export default function ResetPasswordPage() {
   const router = useRouter()
@@ -147,8 +148,14 @@ export default function ResetPasswordPage() {
         .ifield:focus{border-color:rgba(207,255,0,0.4)}
         .pbtn{width:100%;padding:13px;background:#CFFF00;color:#000;border:none;border-radius:10px;font-family:var(--font-syne);font-weight:800;font-size:14px;cursor:none;transition:opacity .2s;letter-spacing:-.01em}
         .pbtn:hover{opacity:.88}
-        .pbtn:disabled{background:#1e1e1e;color:#333;cursor:not-allowed}
+        .pbtn:disabled{background:#1e1e1e;color:#555;cursor:not-allowed}
+        @media (pointer: coarse) { body { cursor: auto !important; } * { cursor: auto !important; } }
+        @media (max-width: 480px) {
+          .rp-wrap { padding: 24px 16px !important; }
+        }
       `}</style>
+
+      <Cursor />
 
       {/* Logo */}
       <div style={{textAlign:'center',marginBottom:32,animation:'fadeUp .5s ease'}}>
@@ -159,7 +166,7 @@ export default function ResetPasswordPage() {
         <div style={{fontFamily:'var(--font-syne)',fontWeight:800,color:'#fff',fontSize:18,letterSpacing:'-.03em'}}>
           {done ? 'Password Updated' : 'Set New Password'}
         </div>
-        <div style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#333',letterSpacing:'.1em',marginTop:4,textTransform:'uppercase'}}>
+        <div style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#666',letterSpacing:'.1em',marginTop:4,textTransform:'uppercase'}}>
           Chathurya SDC
         </div>
       </div>
@@ -173,7 +180,7 @@ export default function ResetPasswordPage() {
             <h2 style={{fontFamily:'var(--font-syne)',fontWeight:800,color:'#CFFF00',fontSize:20,letterSpacing:'-.03em',marginBottom:8}}>
               Password updated!
             </h2>
-            <p style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#444',lineHeight:1.8}}>
+            <p style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#666',lineHeight:1.8}}>
               Redirecting you to login...
             </p>
           </div>
@@ -185,7 +192,7 @@ export default function ResetPasswordPage() {
             {!error ? (
               <>
                 <div style={{width:32,height:32,border:'2px solid #1a1a1a',borderTopColor:'#CFFF00',borderRadius:'50%',animation:'spin .7s linear infinite',margin:'0 auto 16px'}} />
-                <div style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#444',letterSpacing:'.06em'}}>
+                <div style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#666',letterSpacing:'.06em'}}>
                   Verifying reset link...
                 </div>
               </>
@@ -218,7 +225,7 @@ export default function ResetPasswordPage() {
                     required placeholder="Min. 8 characters"
                     className="ifield" style={{paddingRight:52}} autoFocus />
                   <button type="button" onClick={()=>setShowPwd(p=>!p)}
-                    style={{position:'absolute',right:14,top:'50%',transform:'translateY(-50%)',background:'none',border:'none',cursor:'none',fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#444'}}>
+                    style={{position:'absolute',right:14,top:'50%',transform:'translateY(-50%)',background:'none',border:'none',cursor:'none',fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#666'}}>
                     {showPwd?'hide':'show'}
                   </button>
                 </div>
@@ -264,8 +271,8 @@ export default function ResetPasswordPage() {
           </div>
         )}
 
-        <div style={{textAlign:'center',marginTop:20,fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#2a2a2a',letterSpacing:'.06em'}}>
-          <Link href="/login" style={{color:'#444',textDecoration:'none'}}>← Back to login</Link>
+        <div style={{textAlign:'center',marginTop:20,fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#666',letterSpacing:'.06em'}}>
+          <Link href="/login" style={{color:'#666',textDecoration:'none'}}>← Back to login</Link>
         </div>
       </div>
     </div>

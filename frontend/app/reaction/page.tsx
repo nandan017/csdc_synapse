@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { authFetch } from '@/lib/auth-fetch'
+import Cursor from '@/components/Cursor'
 
 /* ── Types ──────────────────────────────────────────────────────────────── */
 type GameState = 'idle' | 'countdown' | 'waiting' | 'go' | 'result' | 'false_start'
@@ -138,8 +139,10 @@ export default function ReactionPage() {
   const grade = reactionMs > 0 ? getGrade(reactionMs) : null
 
   return (
-    <div style={{ minHeight: '100vh', background: '#050505', color: '#fff', fontFamily: 'var(--font-dm-sans)' }}>
+    <div style={{ minHeight: '100vh', background: '#050505', color: '#fff', fontFamily: 'var(--font-dm-sans)', cursor: 'none' }}>
+      <Cursor />
       <style>{`
+        body { cursor: none; }
         @keyframes lightOn {
           from { transform: scale(0.8); opacity: 0.2 }
           to   { transform: scale(1); opacity: 1 }
@@ -168,15 +171,55 @@ export default function ReactionPage() {
           0%, 100% { box-shadow: 0 0 20px rgba(255,26,26,0.4), 0 0 60px rgba(255,26,26,0.15) }
           50%      { box-shadow: 0 0 30px rgba(255,26,26,0.7), 0 0 80px rgba(255,26,26,0.25) }
         }
+        .r-light { width: 72px; height: 72px; }
+        .r-panel { gap: 28px; padding: 32px 56px; }
+        .r-result-num { font-size: 96px; }
+        .r-stats-grid { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; }
+        .r-stat-card { min-width: 80px; padding: 10px 18px; }
+        .r-tap-btn { width: 280px; padding: 20px 0; font-size: 18px; }
+        .r-lb { max-width: 520px; padding: 24px 24px 20px; }
+        .r-title { font-size: ${state === 'result' ? '28px' : '42px'}; }
+        .r-nav { padding: 16px 28px; }
+
+        @media (max-width: 768px) {
+          .r-light { width: 52px; height: 52px; }
+          .r-panel { gap: 16px; padding: 24px 28px; }
+          .r-result-num { font-size: 64px; }
+          .r-stat-card { min-width: 70px; padding: 8px 12px; }
+          .r-tap-btn { width: 100%; max-width: 320px; padding: 18px 0; font-size: 16px; }
+          .r-lb { padding: 18px 16px 16px; }
+          .r-title { font-size: ${state === 'result' ? '22px' : '32px'}; }
+          .r-nav { padding: 14px 18px; }
+        }
+        @media (max-width: 480px) {
+          .r-light { width: 42px; height: 42px; }
+          .r-panel { gap: 10px; padding: 18px 16px; border-radius: 16px; }
+          .r-result-num { font-size: 52px; }
+          .r-stats-grid { gap: 8px; }
+          .r-stat-card { min-width: 60px; padding: 8px 10px; }
+          .r-tap-btn { padding: 16px 0; font-size: 15px; border-radius: 12px; }
+          .r-lb { padding: 16px 12px 14px; border-radius: 14px; }
+          .r-title { font-size: ${state === 'result' ? '20px' : '26px'}; }
+        }
+        @media (max-width: 360px) {
+          .r-light { width: 36px; height: 36px; }
+          .r-panel { gap: 8px; padding: 14px 12px; }
+          .r-result-num { font-size: 44px; }
+        }
+
+        @media (pointer: coarse) {
+          body { cursor: auto !important; }
+          * { cursor: auto !important; }
+        }
       `}</style>
 
       {/* ── Nav ── */}
-      <div style={{
+      <div className="r-nav" style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '16px 28px', borderBottom: '1px solid #111',
+        borderBottom: '1px solid #111',
       }}>
         <Link href="/dashboard" style={{
-          fontFamily: 'var(--font-jetbrains)', fontSize: 11, color: '#444',
+          fontFamily: 'var(--font-jetbrains)', fontSize: 11, color: '#666',
           textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6,
         }}>
           ← Dashboard
@@ -189,7 +232,7 @@ export default function ReactionPage() {
         </div>
       </div>
 
-      {/* ══════════ Game Area (full width, centered) ══════════ */}
+      {/* ══════════ Game Area ══════════ */}
       <div style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
         minHeight: 'calc(100vh - 53px)', padding: '40px 20px',
@@ -197,9 +240,8 @@ export default function ReactionPage() {
 
         {/* Title */}
         <div style={{ textAlign: 'center', marginBottom: 48 }}>
-          <h1 style={{
+          <h1 className="r-title" style={{
             fontFamily: 'var(--font-syne)', fontWeight: 800,
-            fontSize: state === 'result' ? 28 : 42,
             letterSpacing: '-.04em', margin: '0 0 8px',
             color: state === 'go' ? '#CFFF00' : state === 'false_start' ? '#ff4040' : '#fff',
             transition: 'color 0.15s',
@@ -211,7 +253,7 @@ export default function ReactionPage() {
           </h1>
           <p style={{
             fontFamily: 'var(--font-jetbrains)', fontSize: 12,
-            color: state === 'false_start' ? '#ff4040' : '#2a2a2a',
+            color: state === 'false_start' ? '#ff4040' : '#666',
             letterSpacing: '.04em', margin: 0,
           }}>
             {state === 'idle' && 'Test your reflexes against the F1 countdown lights'}
@@ -222,11 +264,10 @@ export default function ReactionPage() {
           </p>
         </div>
 
-        {/* ── F1 Lights — wide panel ── */}
-        <div style={{
-          display: 'flex', gap: 28, marginBottom: 48,
-          padding: '32px 56px', borderRadius: 24,
-          background: '#080808',
+        {/* ── F1 Lights ── */}
+        <div className="r-panel" style={{
+          display: 'flex', marginBottom: 48,
+          borderRadius: 24, background: '#080808',
           border: '1px solid #1a1a1a',
           boxShadow: '0 8px 60px rgba(0,0,0,0.6)',
           animation: state === 'go' ? 'goFlash 0.5s ease forwards' :
@@ -235,8 +276,8 @@ export default function ReactionPage() {
           {[0, 1, 2, 3, 4].map(i => {
             const isLit = state === 'go' ? false : litCount > i
             return (
-              <div key={i} style={{
-                width: 72, height: 72, borderRadius: '50%',
+              <div key={i} className="r-light" style={{
+                borderRadius: '50%',
                 background: isLit
                   ? 'radial-gradient(circle at 40% 35%, #ff6b6b 0%, #ff1a1a 40%, #cc0000 100%)'
                   : 'radial-gradient(circle at 40% 35%, #1a1a1a 0%, #111 60%, #0a0a0a 100%)',
@@ -248,11 +289,10 @@ export default function ReactionPage() {
                 animation: isLit ? 'lightOn 0.12s ease forwards, glowPulse 1.5s ease-in-out infinite' : 'none',
                 position: 'relative',
               }}>
-                {/* Inner highlight */}
                 {isLit && (
                   <div style={{
-                    position: 'absolute', top: 10, left: 14,
-                    width: 18, height: 12, borderRadius: '50%',
+                    position: 'absolute', top: '14%', left: '20%',
+                    width: '25%', height: '17%', borderRadius: '50%',
                     background: 'radial-gradient(circle, rgba(255,200,200,0.6), transparent)',
                   }} />
                 )}
@@ -261,37 +301,35 @@ export default function ReactionPage() {
           })}
         </div>
 
-        {/* ── Result big number ── */}
+        {/* ── Result ── */}
         {state === 'result' && grade && (
           <div style={{
             textAlign: 'center', marginBottom: 32,
             animation: 'popIn 0.3s ease forwards',
           }}>
-            <div style={{
+            <div className="r-result-num" style={{
               fontFamily: 'var(--font-syne)', fontWeight: 800,
-              fontSize: 96, color: grade.color,
+              color: grade.color,
               letterSpacing: '-.06em', lineHeight: 1,
             }}>
-              {reactionMs}<span style={{ fontSize: 28, color: '#2a2a2a', marginLeft: 4 }}>ms</span>
+              {reactionMs}<span style={{ fontSize: '0.3em', color: '#555', marginLeft: 4 }}>ms</span>
             </div>
 
             {myStats && (
-              <div style={{
-                display: 'flex', gap: 16, justifyContent: 'center', marginTop: 24,
-              }}>
+              <div className="r-stats-grid" style={{ marginTop: 24 }}>
                 {[
                   { label: 'Personal Best', value: myStats.best_ms ? `${myStats.best_ms}ms` : '—' },
                   { label: 'Rank', value: myStats.rank ? `#${myStats.rank}` : '—' },
                   { label: 'Attempts', value: String(myStats.attempts) },
                   { label: 'False Starts', value: String(myStats.false_starts) },
                 ].map(s => (
-                  <div key={s.label} style={{
-                    background: '#0a0a0a', border: '1px solid #161616',
-                    borderRadius: 10, padding: '10px 18px', minWidth: 80,
+                  <div key={s.label} className="r-stat-card" style={{
+                    background: '#0a0a0a', border: '1px solid #1e1e1e',
+                    borderRadius: 10,
                   }}>
                     <div style={{
                       fontFamily: 'var(--font-jetbrains)', fontSize: 9,
-                      color: '#333', letterSpacing: '.08em',
+                      color: '#666', letterSpacing: '.08em',
                       textTransform: 'uppercase', marginBottom: 4,
                     }}>{s.label}</div>
                     <div style={{
@@ -303,7 +341,7 @@ export default function ReactionPage() {
               </div>
             )}
             {saving && (
-              <div style={{ fontFamily: 'var(--font-jetbrains)', fontSize: 10, color: '#1e1e1e', marginTop: 10 }}>
+              <div style={{ fontFamily: 'var(--font-jetbrains)', fontSize: 10, color: '#555', marginTop: 10 }}>
                 Saving...
               </div>
             )}
@@ -312,9 +350,9 @@ export default function ReactionPage() {
 
         {/* ── Tap Button ── */}
         <button
+          className="r-tap-btn"
           onClick={handleTap}
           style={{
-            width: 280, padding: '20px 0',
             background: state === 'go' ? '#CFFF00'
                       : state === 'false_start' ? 'rgba(255,64,64,0.08)'
                       : state === 'result' ? 'rgba(207,255,0,0.06)'
@@ -328,8 +366,8 @@ export default function ReactionPage() {
             color: state === 'go' ? '#000'
                  : state === 'false_start' ? '#ff6b6b'
                  : '#CFFF00',
-            fontFamily: 'var(--font-syne)', fontWeight: 800, fontSize: 18,
-            cursor: 'pointer', letterSpacing: '-.01em',
+            fontFamily: 'var(--font-syne)', fontWeight: 800,
+            cursor: 'none', letterSpacing: '-.01em',
             transition: 'all 0.15s',
             animation: state === 'go' ? 'pulse 0.35s ease infinite' : 'none',
           }}
@@ -341,31 +379,31 @@ export default function ReactionPage() {
           {state === 'false_start' && 'Retry'}
         </button>
 
-        {/* ── Personal best (idle only) ── */}
+        {/* ── Personal best (idle) ── */}
         {state === 'idle' && myStats && myStats.best_ms && (
           <div style={{
             marginTop: 24, textAlign: 'center',
             fontFamily: 'var(--font-jetbrains)', fontSize: 11,
           }}>
-            <span style={{ color: '#2a2a2a' }}>Your best: </span>
+            <span style={{ color: '#666' }}>Your best: </span>
             <span style={{ color: '#CFFF00', fontWeight: 700 }}>{myStats.best_ms}ms</span>
             {myStats.rank && (
               <>
-                <span style={{ color: '#1a1a1a' }}> · </span>
-                <span style={{ color: '#2a2a2a' }}>Rank </span>
-                <span style={{ color: '#666' }}>#{myStats.rank}</span>
-                <span style={{ color: '#1a1a1a' }}> / {myStats.total_players}</span>
+                <span style={{ color: '#555' }}> · </span>
+                <span style={{ color: '#666' }}>Rank </span>
+                <span style={{ color: '#888' }}>#{myStats.rank}</span>
+                <span style={{ color: '#555' }}> / {myStats.total_players}</span>
               </>
             )}
           </div>
         )}
 
-        {/* ══════════ Leaderboard (shown after game ends) ══════════ */}
+        {/* ══════════ Leaderboard ══════════ */}
         {showBoard && (
-          <div style={{
-            width: '100%', maxWidth: 520, marginTop: 40,
-            background: '#0a0a0a', border: '1px solid #141414',
-            borderRadius: 18, padding: '24px 24px 20px',
+          <div className="r-lb" style={{
+            width: '100%', marginTop: 40,
+            background: '#0a0a0a', border: '1px solid #1a1a1a',
+            borderRadius: 18,
             animation: 'slideUp 0.4s ease forwards',
           }}>
             <div style={{
@@ -375,13 +413,13 @@ export default function ReactionPage() {
               display: 'flex', alignItems: 'center', gap: 8,
             }}>
               🏆 Leaderboard
-              <span style={{ color: '#222', fontSize: 9 }}>Top 20</span>
+              <span style={{ color: '#555', fontSize: 9 }}>Top 20</span>
             </div>
 
             {leaderboard.length === 0 ? (
               <div style={{
                 padding: '28px 0', textAlign: 'center',
-                fontFamily: 'var(--font-jetbrains)', fontSize: 11, color: '#1e1e1e',
+                fontFamily: 'var(--font-jetbrains)', fontSize: 11, color: '#555',
               }}>
                 No scores yet. You could be first!
               </div>
@@ -408,7 +446,7 @@ export default function ReactionPage() {
                         }`,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         fontFamily: 'var(--font-syne)', fontWeight: 800, fontSize: 11,
-                        color: i === 0 ? '#CFFF00' : i < 3 ? '#888' : '#333',
+                        color: i === 0 ? '#CFFF00' : i < 3 ? '#888' : '#555',
                       }}>
                         {i + 1}
                       </div>
@@ -439,7 +477,7 @@ export default function ReactionPage() {
                         fontSize: 16, color: g.color, flexShrink: 0,
                         letterSpacing: '-.02em',
                       }}>
-                        {entry.reaction_time_ms}<span style={{ fontSize: 10, color: '#2a2a2a' }}>ms</span>
+                        {entry.reaction_time_ms}<span style={{ fontSize: 10, color: '#555' }}>ms</span>
                       </div>
                     </div>
                   )

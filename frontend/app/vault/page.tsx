@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
+import Cursor from '@/components/Cursor'
 
 interface Resource {
   id: string
@@ -73,10 +74,22 @@ export default function VaultPage() {
           display:flex;flex-direction:column;gap:10px;
         }
         .resource-card:hover{border-color:rgba(207,255,0,0.18);transform:translateY(-2px);background:rgba(207,255,0,0.02)}
+        @media (pointer: coarse) { body { cursor: auto !important; } * { cursor: auto !important; } }
+        @media (max-width: 768px) {
+          .v-nav { padding: 12px 16px !important; }
+          .v-content { padding: 24px 16px !important; }
+          .v-grid { grid-template-columns: 1fr !important; }
+        }
+        @media (max-width: 480px) {
+          .v-filters { flex-direction: column !important; align-items: stretch !important; gap: 10px !important; }
+          .v-filters input { width: 100% !important; margin-left: 0 !important; }
+        }
       `}</style>
 
+      <Cursor />
+
       {/* Navbar */}
-      <nav style={{
+      <nav className="v-nav" style={{
         position: 'sticky', top: 0, zIndex: 50,
         background: 'rgba(8,8,8,0.92)', backdropFilter: 'blur(16px)',
         borderBottom: '1px solid #111', padding: '14px 40px',
@@ -87,17 +100,17 @@ export default function VaultPage() {
           <img src="/logo.png" alt="" style={{ width: 24, height: 24, objectFit: 'contain' }} />
           <span style={{ fontFamily: 'var(--font-syne)', fontWeight: 800, color: '#fff', fontSize: 14, letterSpacing: '-.02em' }}>Chathurya</span>
         </Link>
-        <div style={{ fontFamily: 'var(--font-jetbrains)', fontSize: 10, color: '#333', letterSpacing: '.1em', textTransform: 'uppercase' }}>
+        <div style={{ fontFamily: 'var(--font-jetbrains)', fontSize: 10, color: '#666', letterSpacing: '.1em', textTransform: 'uppercase' }}>
           Resource Vault
         </div>
-        <Link href="/dashboard" style={{ fontFamily: 'var(--font-jetbrains)', fontSize: 11, color: '#444', textDecoration: 'none', border: '1px solid #1e1e1e', padding: '6px 14px', borderRadius: 7, transition: 'all .2s' }}
+        <Link href="/dashboard" style={{ fontFamily: 'var(--font-jetbrains)', fontSize: 11, color: '#666', textDecoration: 'none', border: '1px solid #1e1e1e', padding: '6px 14px', borderRadius: 7, transition: 'all .2s' }}
           onMouseEnter={(e: any) => { e.currentTarget.style.color = '#CFFF00'; e.currentTarget.style.borderColor = 'rgba(207,255,0,0.2)' }}
-          onMouseLeave={(e: any) => { e.currentTarget.style.color = '#444'; e.currentTarget.style.borderColor = '#1e1e1e' }}>
+          onMouseLeave={(e: any) => { e.currentTarget.style.color = '#666'; e.currentTarget.style.borderColor = '#1e1e1e' }}>
           Dashboard
         </Link>
       </nav>
 
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '48px 40px' }}>
+      <div className="v-content" style={{ maxWidth: 1200, margin: '0 auto', padding: '48px 40px' }}>
 
         {/* Header */}
         <div style={{ marginBottom: 40, animation: 'fadeUp .6s ease' }}>
@@ -113,7 +126,7 @@ export default function VaultPage() {
         </div>
 
         {/* Filters */}
-        <div style={{ display: 'flex', gap: 28, marginBottom: 28, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div className="v-filters" style={{ display: 'flex', gap: 28, marginBottom: 28, alignItems: 'center', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             {CATEGORIES.map(c => (
               <button key={c.key} onClick={() => setCategory(c.key)}
@@ -141,18 +154,18 @@ export default function VaultPage() {
 
         {/* Grid */}
         {loading ? (
-          <div style={{ color: '#2a2a2a', fontFamily: 'var(--font-jetbrains)', fontSize: 12, padding: 40, textAlign: 'center' }}>
+          <div style={{ color: '#666', fontFamily: 'var(--font-jetbrains)', fontSize: 12, padding: 40, textAlign: 'center' }}>
             Loading vault...
           </div>
         ) : resources.length === 0 ? (
           <div style={{ padding: 80, textAlign: 'center' }}>
             <div style={{ fontSize: 36, marginBottom: 16, opacity: .3 }}>📦</div>
-            <div style={{ fontFamily: 'var(--font-jetbrains)', fontSize: 12, color: '#2a2a2a' }}>
+            <div style={{ fontFamily: 'var(--font-jetbrains)', fontSize: 12, color: '#666' }}>
               {search || category !== 'all' ? 'No resources match your filter.' : 'Vault is empty — leads can add resources from the admin panel.'}
             </div>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(300px,1fr))', gap: 14 }}>
+          <div className="v-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(300px,1fr))', gap: 14 }}>
             {resources.map((r, i) => (
               <div key={r.id} className="resource-card"
                 onClick={() => handleResourceClick(r)}
@@ -169,7 +182,7 @@ export default function VaultPage() {
                   }}>
                     {r.category}
                   </span>
-                  <span style={{ fontFamily: 'var(--font-jetbrains)', fontSize: 9, color: '#2a2a2a' }}>
+                  <span style={{ fontFamily: 'var(--font-jetbrains)', fontSize: 9, color: '#666' }}>
                     {r.view_count} views
                   </span>
                 </div>
@@ -180,7 +193,7 @@ export default function VaultPage() {
                 </div>
 
                 {/* Description */}
-                <p style={{ color: '#484848', fontSize: 12, lineHeight: 1.7, margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                <p style={{ color: '#777', fontSize: 12, lineHeight: 1.7, margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                   {r.description}
                 </p>
 
@@ -190,7 +203,7 @@ export default function VaultPage() {
                     {r.tags.slice(0, 4).map(tag => (
                       <span key={tag} style={{
                         fontFamily: 'var(--font-jetbrains)', fontSize: 9,
-                        color: '#383838', border: '1px solid #1a1a1a',
+                        color: '#777', border: '1px solid #1a1a1a',
                         padding: '2px 8px', borderRadius: 99,
                       }}>
                         {tag}
@@ -201,7 +214,7 @@ export default function VaultPage() {
 
                 {/* Footer */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
-                  <span style={{ fontFamily: 'var(--font-jetbrains)', fontSize: 10, color: '#2a2a2a' }}>
+                  <span style={{ fontFamily: 'var(--font-jetbrains)', fontSize: 10, color: '#666' }}>
                     {r.members ? `${r.members.first_name} ${r.members.last_name}` : 'Chathurya SDC'}
                   </span>
                   <span style={{ fontFamily: 'var(--font-jetbrains)', fontSize: 10, color: '#CFFF00' }}>

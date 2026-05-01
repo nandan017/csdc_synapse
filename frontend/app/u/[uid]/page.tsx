@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
+import Cursor from '@/components/Cursor'
 
 interface Profile {
   first_name:       string
@@ -149,7 +150,7 @@ export default function PublicProfile() {
           animation:'spin .7s linear infinite',
           margin:'0 auto 20px',
         }} />
-        <div style={{fontSize:10,color:'#2a2a2a',letterSpacing:'.15em'}}>
+        <div style={{fontSize:10,color:'#666',letterSpacing:'.15em'}}>
           READING NFC SIGNAL...
         </div>
       </div>
@@ -169,13 +170,13 @@ export default function PublicProfile() {
       <style>{`body{background:#060606;cursor:none}`}</style>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/logo.png" alt="" style={{width:32,height:32,objectFit:'contain',marginBottom:24,opacity:.4}} />
-      <div style={{fontFamily:'var(--font-syne)',fontWeight:800,color:'#222',fontSize:18,letterSpacing:'-.03em',marginBottom:8}}>
+      <div style={{fontFamily:'var(--font-syne)',fontWeight:800,color:'#555',fontSize:18,letterSpacing:'-.03em',marginBottom:8}}>
         Signal lost.
       </div>
-      <div style={{fontSize:11,color:'#2a2a2a',letterSpacing:'.08em',marginBottom:24}}>
+      <div style={{fontSize:11,color:'#666',letterSpacing:'.08em',marginBottom:24}}>
         This NFC card isn&apos;t registered in our system.
       </div>
-      <Link href="/" style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#333',textDecoration:'none',
+      <Link href="/" style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#666',textDecoration:'none',
         border:'1px solid #1a1a1a',padding:'8px 16px',borderRadius:8,letterSpacing:'.06em'}}>
         ← Chathurya
       </Link>
@@ -236,7 +237,7 @@ export default function PublicProfile() {
           border:1px solid #1a1a1a;
           border-radius:10px;
           font-family:var(--font-jetbrains);
-          font-size:11px; color:#444;
+          font-size:11px; color:#666;
           text-decoration:none;
           transition:all .25s;
           letter-spacing:.04em;
@@ -258,7 +259,10 @@ export default function PublicProfile() {
           background:linear-gradient(90deg,transparent,rgba(207,255,0,0.12),transparent);
           animation:scanDown 6s linear infinite;
         }
+        @media (pointer: coarse) { body { cursor: auto !important; } * { cursor: auto !important; } }
       `}</style>
+
+      <Cursor />
 
       <ParticleField />
       <div className="noise-layer" />
@@ -286,7 +290,7 @@ export default function PublicProfile() {
         }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo.png" alt="" style={{width:22,height:22,objectFit:'contain'}} />
-          <span style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#333',letterSpacing:'.08em'}}>
+          <span style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#666',letterSpacing:'.08em'}}>
             CHATHURYA SDC
           </span>
         </Link>
@@ -298,7 +302,7 @@ export default function PublicProfile() {
         }}>
           <div style={{width:5,height:5,borderRadius:'50%',background:'#CFFF00',
             animation:'glowPulse 2s ease-in-out infinite'}} />
-          <span style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#2a2a2a',letterSpacing:'.12em'}}>
+          <span style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#666',letterSpacing:'.12em'}}>
             NFC VERIFIED
           </span>
         </div>
@@ -401,12 +405,12 @@ export default function PublicProfile() {
           }}>
             {displayRole}
           </span>
-          <span style={{width:3,height:3,borderRadius:'50%',background:'#2a2a2a',display:'inline-block'}} />
-          <span style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#383838',letterSpacing:'.06em'}}>
+          <span style={{width:3,height:3,borderRadius:'50%',background:'#555',display:'inline-block'}} />
+          <span style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#777',letterSpacing:'.06em'}}>
             {profile.stream}
           </span>
           <span style={{width:3,height:3,borderRadius:'50%',background:'#2a2a2a',display:'inline-block'}} />
-          <span style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#383838',letterSpacing:'.06em'}}>
+          <span style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#777',letterSpacing:'.06em'}}>
             {yearLabel} Year
           </span>
         </div>
@@ -415,7 +419,7 @@ export default function PublicProfile() {
         {profile.bio && (
           <p style={{
             fontFamily:'var(--font-dm-sans)', fontWeight:300,
-            color:'#444', fontSize:14, lineHeight:1.8,
+            color:'#777', fontSize:14, lineHeight:1.8,
             maxWidth:400, textAlign:'center', marginBottom:28,
             opacity: phase >= 2 ? 1 : 0,
             animation: phase >= 2 ? 'fadeUp .5s .25s ease forwards' : 'none',
@@ -526,12 +530,12 @@ export default function PublicProfile() {
           }} />
           <Link href="/register" style={{
             fontFamily:'var(--font-jetbrains)', fontSize:9,
-            color:'#2a2a2a', textDecoration:'none',
+            color:'#666', textDecoration:'none',
             letterSpacing:'.12em', textTransform:'uppercase',
             transition:'color .2s',
           }}
           onMouseEnter={e=>(e.currentTarget.style.color='#CFFF00')}
-          onMouseLeave={e=>(e.currentTarget.style.color='#2a2a2a')}>
+          onMouseLeave={e=>(e.currentTarget.style.color='#666')}>
             Chathurya Student Developers Club · Apply to join →
           </Link>
         </div>

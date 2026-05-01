@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import Link from 'next/link'
 import QRCode from 'qrcode'
+import Cursor from '@/components/Cursor'
 
 type State = 'idle' | 'scanning' | 'qr' | 'success' | 'already' | 'error' | 'connecting'
 
@@ -173,12 +174,18 @@ function ConnectPageInner() {
         @keyframes qrGlow { 0%,100%{box-shadow:0 0 20px rgba(207,255,0,0.08)} 50%{box-shadow:0 0 40px rgba(207,255,0,0.18)} }
         @keyframes scanPulse { 0%,100%{opacity:.6} 50%{opacity:1} }
         .ping-ring { position:absolute;inset:0;border-radius:50%;border:2px solid rgba(207,255,0,0.35);animation:ping 1.4s cubic-bezier(0,0,.2,1) infinite; }
+        @media (pointer: coarse) { body { cursor: auto !important; } * { cursor: auto !important; } }
+        @media (max-width: 480px) {
+          .c-nav { padding: 12px 16px !important; }
+        }
       `}</style>
 
+      <Cursor />
+
       {/* Navbar */}
-      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, padding: '14px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(8,8,8,0.8)', backdropFilter: 'blur(12px)', borderBottom: '1px solid #111', zIndex: 10 }}>
-        <Link href="/dashboard" style={{ fontFamily: 'var(--font-jetbrains)', fontSize: 10, color: '#444', textDecoration: 'none', letterSpacing: '.06em' }}>← Dashboard</Link>
-        <div style={{ fontFamily: 'var(--font-jetbrains)', fontSize: 9, color: '#2a2a2a', letterSpacing: '.15em', textTransform: 'uppercase' }}>Tap · Connect</div>
+      <div className="c-nav" style={{ position: 'fixed', top: 0, left: 0, right: 0, padding: '14px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(8,8,8,0.8)', backdropFilter: 'blur(12px)', borderBottom: '1px solid #111', zIndex: 10 }}>
+        <Link href="/dashboard" style={{ fontFamily: 'var(--font-jetbrains)', fontSize: 10, color: '#666', textDecoration: 'none', letterSpacing: '.06em' }}>← Dashboard</Link>
+        <div style={{ fontFamily: 'var(--font-jetbrains)', fontSize: 9, color: '#666', letterSpacing: '.15em', textTransform: 'uppercase' }}>Tap · Connect</div>
         <div style={{ width: 80 }} />
       </div>
 
@@ -217,7 +224,7 @@ function ConnectPageInner() {
                 {/* Divider */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '20px 0' }}>
                   <div style={{ flex: 1, height: 1, background: '#1a1a1a' }} />
-                  <span style={{ fontFamily: 'var(--font-jetbrains)', fontSize: 10, color: '#2a2a2a', letterSpacing: '.08em' }}>or</span>
+                  <span style={{ fontFamily: 'var(--font-jetbrains)', fontSize: 10, color: '#666', letterSpacing: '.08em' }}>or</span>
                   <div style={{ flex: 1, height: 1, background: '#1a1a1a' }} />
                 </div>
               </>
@@ -256,7 +263,7 @@ function ConnectPageInner() {
             </button>
 
             {!myUid && memberId && (
-              <div style={{ marginTop: 14, fontFamily: 'var(--font-jetbrains)', fontSize: 10, color: '#333', letterSpacing: '.04em' }}>
+              <div style={{ marginTop: 14, fontFamily: 'var(--font-jetbrains)', fontSize: 10, color: '#666', letterSpacing: '.04em' }}>
                 Your NFC card hasn&apos;t been issued yet. QR unavailable.
               </div>
             )}
@@ -315,7 +322,7 @@ function ConnectPageInner() {
             <h2 style={{ fontFamily: 'var(--font-syne)', fontWeight: 800, color: '#fff', fontSize: 18, letterSpacing: '-.03em', marginTop: 24, marginBottom: 6 }}>
               Have them scan this
             </h2>
-            <p style={{ fontFamily: 'var(--font-jetbrains)', fontSize: 11, color: '#444', lineHeight: 1.7, marginBottom: 6, maxWidth: 300, margin: '0 auto 20px' }}>
+            <p style={{ fontFamily: 'var(--font-jetbrains)', fontSize: 11, color: '#666', lineHeight: 1.7, marginBottom: 6, maxWidth: 300, margin: '0 auto 20px' }}>
               The other member opens their phone camera and scans this QR code. The connection is created automatically.
             </p>
 
@@ -323,11 +330,11 @@ function ConnectPageInner() {
               <button onClick={reset} style={{
                 padding: '10px 22px', background: 'transparent',
                 border: '1px solid #1a1a1a', borderRadius: 9,
-                color: '#444', fontFamily: 'var(--font-jetbrains)',
+                color: '#666', fontFamily: 'var(--font-jetbrains)',
                 fontSize: 11, cursor: 'none', transition: 'all .2s',
               }}
               onMouseEnter={e => { e.currentTarget.style.borderColor='rgba(207,255,0,0.2)'; e.currentTarget.style.color='#CFFF00' }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor='#1a1a1a'; e.currentTarget.style.color='#444' }}>
+              onMouseLeave={e => { e.currentTarget.style.borderColor='#1a1a1a'; e.currentTarget.style.color='#666' }}>
                 ← Back
               </button>
             </div>
@@ -366,7 +373,7 @@ function ConnectPageInner() {
               Waiting for card...
             </h2>
             <p style={{ color: '#555', fontSize: 13 }}>Hold their card to the back of your phone</p>
-            <button onClick={reset} style={{ marginTop: 24, background: 'transparent', border: '1px solid #1a1a1a', borderRadius: 8, color: '#333', fontFamily: 'var(--font-jetbrains)', fontSize: 11, padding: '8px 18px', cursor: 'none' }}>
+            <button onClick={reset} style={{ marginTop: 24, background: 'transparent', border: '1px solid #1a1a1a', borderRadius: 8, color: '#555', fontFamily: 'var(--font-jetbrains)', fontSize: 11, padding: '8px 18px', cursor: 'none' }}>
               Cancel
             </button>
           </div>
@@ -410,7 +417,7 @@ function ConnectPageInner() {
             </div>
 
             {result.bio && (
-              <p style={{ color: '#444', fontSize: 13, lineHeight: 1.7, marginBottom: 16, maxWidth: 320, margin: '0 auto 16px' }}>{result.bio}</p>
+              <p style={{ color: '#666', fontSize: 13, lineHeight: 1.7, marginBottom: 16, maxWidth: 320, margin: '0 auto 16px' }}>{result.bio}</p>
             )}
 
             {result.skills && result.skills.length > 0 && (
@@ -440,7 +447,7 @@ function ConnectPageInner() {
               <button onClick={reset} style={{ padding: '10px 22px', background: '#CFFF00', border: 'none', borderRadius: 9, color: '#000', fontFamily: 'var(--font-syne)', fontWeight: 800, fontSize: 13, cursor: 'none' }}>
                 Scan Another
               </button>
-              <Link href="/dashboard" style={{ padding: '10px 22px', background: 'transparent', border: '1px solid #1a1a1a', borderRadius: 9, color: '#444', fontFamily: 'var(--font-jetbrains)', fontSize: 12, textDecoration: 'none' }}>
+              <Link href="/dashboard" style={{ padding: '10px 22px', background: 'transparent', border: '1px solid #1a1a1a', borderRadius: 9, color: '#666', fontFamily: 'var(--font-jetbrains)', fontSize: 12, textDecoration: 'none' }}>
                 Dashboard
               </Link>
             </div>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
+import Cursor from '@/components/Cursor'
 
 type Step = 'tap' | 'form' | 'submitting' | 'done' | 'duplicate' | 'error'
 
@@ -93,16 +94,19 @@ export default function FeedbackPage() {
         .ping-ring{position:absolute;inset:0;border-radius:50%;border:2px solid rgba(207,255,0,0.3);animation:ping 1.4s cubic-bezier(0,0,.2,1) infinite}
         .star-btn{background:none;border:none;cursor:none;font-size:28px;transition:transform .15s}
         .star-btn:hover{transform:scale(1.2)}
+        @media (pointer: coarse) { body { cursor: auto !important; } * { cursor: auto !important; } }
       `}</style>
+
+      <Cursor />
 
       {/* Logo */}
       <div style={{ textAlign: 'center', marginBottom: 32 }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/logo.png" alt="" style={{ width: 28, height: 28, objectFit: 'contain', marginBottom: 8, filter: 'drop-shadow(0 0 8px rgba(207,255,0,0.4))' }} />
-        <div style={{ fontFamily: 'var(--font-jetbrains)', fontSize: 9, color: '#2a2a2a', letterSpacing: '.15em', textTransform: 'uppercase' }}>
+        <div style={{ fontFamily: 'var(--font-jetbrains)', fontSize: 9, color: '#666', letterSpacing: '.15em', textTransform: 'uppercase' }}>
           Workshop Feedback
         </div>
-        {wsTitle && <div style={{ fontFamily: 'var(--font-jetbrains)', fontSize: 11, color: '#444', marginTop: 4 }}>{wsTitle}</div>}
+        {wsTitle && <div style={{ fontFamily: 'var(--font-jetbrains)', fontSize: 11, color: '#666', marginTop: 4 }}>{wsTitle}</div>}
       </div>
 
       <div style={{ width: '100%', maxWidth: 420 }}>
@@ -192,7 +196,7 @@ export default function FeedbackPage() {
                     flex: 1, padding: '10px',
                     background: wouldReturn === val ? 'rgba(207,255,0,0.08)' : 'transparent',
                     border: `1px solid ${wouldReturn === val ? 'rgba(207,255,0,0.3)' : '#1e1e1e'}`,
-                    borderRadius: 9, color: wouldReturn === val ? '#CFFF00' : '#444',
+                    borderRadius: 9, color: wouldReturn === val ? '#CFFF00' : '#666',
                     fontFamily: 'var(--font-jetbrains)', fontSize: 12,
                     cursor: 'none', transition: 'all .2s',
                   }}>
@@ -204,7 +208,7 @@ export default function FeedbackPage() {
             <button onClick={submitFeedback} disabled={!rating} style={{
               width: '100%', padding: '13px',
               background: rating ? '#CFFF00' : '#1a1a1a',
-              color: rating ? '#000' : '#333',
+              color: rating ? '#000' : '#555',
               border: 'none', borderRadius: 10,
               fontFamily: 'var(--font-syne)', fontWeight: 800, fontSize: 14,
               cursor: rating ? 'none' : 'not-allowed',
@@ -218,7 +222,7 @@ export default function FeedbackPage() {
         {step === 'submitting' && (
           <div style={{ textAlign: 'center', padding: '40px 0' }}>
             <div style={{ width: 36, height: 36, border: '2px solid #1a1a1a', borderTopColor: '#CFFF00', borderRadius: '50%', animation: 'spin .7s linear infinite', margin: '0 auto 16px' }} />
-            <div style={{ fontFamily: 'var(--font-jetbrains)', fontSize: 11, color: '#444', letterSpacing: '.06em' }}>Submitting...</div>
+            <div style={{ fontFamily: 'var(--font-jetbrains)', fontSize: 11, color: '#666', letterSpacing: '.06em' }}>Submitting...</div>
           </div>
         )}
 
@@ -230,7 +234,7 @@ export default function FeedbackPage() {
               Thanks for the feedback!
             </h2>
             <p style={{ color: '#555', fontSize: 13 }}>It helps us run better workshops.</p>
-            <Link href="/" style={{ display: 'inline-block', marginTop: 24, fontFamily: 'var(--font-jetbrains)', fontSize: 11, color: '#333', textDecoration: 'none', border: '1px solid #1a1a1a', padding: '8px 16px', borderRadius: 8 }}>
+            <Link href="/" style={{ display: 'inline-block', marginTop: 24, fontFamily: 'var(--font-jetbrains)', fontSize: 11, color: '#666', textDecoration: 'none', border: '1px solid #1a1a1a', padding: '8px 16px', borderRadius: 8 }}>
               ← Back to Chathurya
             </Link>
           </div>
@@ -241,7 +245,7 @@ export default function FeedbackPage() {
           <div style={{ textAlign: 'center', padding: '20px 0', animation: 'popIn .35s ease' }}>
             <div style={{ fontSize: 40, marginBottom: 16 }}>↩</div>
             <h2 style={{ fontFamily: 'var(--font-syne)', fontWeight: 800, color: '#555', fontSize: 20, marginBottom: 8 }}>Already submitted</h2>
-            <p style={{ color: '#444', fontSize: 13 }}>You've already given feedback for this workshop.</p>
+            <p style={{ color: '#666', fontSize: 13 }}>You've already given feedback for this workshop.</p>
           </div>
         )}
 

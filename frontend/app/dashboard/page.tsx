@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import Link from 'next/link'
+import Cursor from '@/components/Cursor'
 
 /* ── Types ───────────────────────────────────────────────────────────────── */
 interface Member {
@@ -439,7 +440,7 @@ if (curRes.ok) {
         <div style={{width:320}}>
           {BOOT_LINES.slice(0, bootLine).map((line, i) => (
             <div key={i} style={{
-              fontSize:11, color: i === bootLine - 1 ? '#CFFF00' : '#2a2a2a',
+              fontSize:11, color: i === bootLine - 1 ? '#CFFF00' : '#666',
               marginBottom:4, letterSpacing:'.04em',
               transition:'color .3s',
             }}>
@@ -545,14 +546,39 @@ if (curRes.ok) {
             radial-gradient(ellipse 80% 50% at 20% 20%, rgba(207,255,0,0.025) 0%, transparent 60%),
             radial-gradient(ellipse 60% 40% at 80% 80%, rgba(207,255,0,0.015) 0%, transparent 50%);
         }
+
+        /* ── Mobile ── */
+        @media (max-width: 768px) {
+          .d-nav { padding: 12px 16px !important; }
+          .d-content { padding: 24px 16px !important; }
+          .d-hero-grid { grid-template-columns: 1fr !important; }
+          .d-stats-2x2 { grid-template-columns: 1fr 1fr !important; }
+          .d-workshops-grid { grid-template-columns: 1fr !important; }
+          .d-con-grid { grid-template-columns: 1fr !important; }
+          .d-f1-card { flex-direction: column !important; gap: 12px !important; text-align: center !important; }
+          .stat-card { padding: 14px !important; }
+        }
+        @media (max-width: 480px) {
+          .d-nav { padding: 10px 14px !important; }
+          .d-content { padding: 16px 12px !important; }
+          .d-nav-name { display: none !important; }
+          .d-stats-2x2 { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+          .stat-card { padding: 12px !important; border-radius: 10px !important; }
+        }
+        @media (pointer: coarse) {
+          body { cursor: auto !important; }
+          * { cursor: auto !important; }
+        }
       `}</style>
+
+      <Cursor />
 
       <div className="noise-overlay" />
       <div className="scan-line" />
       <div className="mesh-bg" />
 
       {/* ── NAVBAR ── */}
-      <nav style={{
+      <nav className="d-nav" style={{
         position:'sticky', top:0, zIndex:50,
         background:'rgba(8,8,8,0.92)', backdropFilter:'blur(16px)',
         borderBottom:'1px solid #111',
@@ -574,28 +600,28 @@ if (curRes.ok) {
         </div>
 
         <div style={{display:'flex',alignItems:'center',gap:16}}>
-          <span style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#444',letterSpacing:'.04em'}}>
+          <span className="d-nav-name" style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#666',letterSpacing:'.04em'}}>
             {member.first_name} {member.last_name}
           </span>
           <button onClick={handleLogout} style={{
             background:'transparent', border:'1px solid #1e1e1e',
-            borderRadius:7, color:'#333', fontFamily:'var(--font-jetbrains)',
+            borderRadius:7, color:'#666', fontFamily:'var(--font-jetbrains)',
             fontSize:10, padding:'6px 12px', cursor:'none',
             letterSpacing:'.04em', transition:'all .2s',
           }}
           onMouseEnter={e=>{e.currentTarget.style.borderColor='rgba(207,255,0,0.2)';e.currentTarget.style.color='#CFFF00'}}
-          onMouseLeave={e=>{e.currentTarget.style.borderColor='#1e1e1e';e.currentTarget.style.color='#333'}}>
+          onMouseLeave={e=>{e.currentTarget.style.borderColor='#1e1e1e';e.currentTarget.style.color='#666'}}>
             Sign out
           </button>
         </div>
       </nav>
 
-      <div style={{position:'relative',zIndex:2,maxWidth:1200,margin:'0 auto',padding:'48px 40px'}}>
+      <div className="d-content" style={{position:'relative',zIndex:2,maxWidth:1200,margin:'0 auto',padding:'48px 40px'}}>
 
         {/* ══════════════════════════════════════════════════════
             HERO — Identity + Stats
         ══════════════════════════════════════════════════════ */}
-        <div style={{
+        <div className="d-hero-grid" style={{
           display:'grid', gridTemplateColumns:'380px 1fr',
           gap:24, marginBottom:24,
           opacity: revealed ? 1 : 0,
@@ -692,13 +718,13 @@ if (curRes.ok) {
               border:'1px solid #1a1a1a',
               borderRadius:8, padding:'8px 14px',
               fontFamily:'var(--font-jetbrains)',
-              fontSize:10, color:'#2e2e2e',
+              fontSize:10, color:'#555',
               letterSpacing:'.08em',
               marginBottom:20, width:'100%',
               textAlign:'center',
             }}>
-              <span style={{color:'#333',marginRight:8}}>UID</span>
-              <span style={{color:'#444'}}>
+              <span style={{color:'#666',marginRight:8}}>UID</span>
+              <span style={{color:'#777'}}>
                 {member.encrypted_uid
                   ? <ScrambleUID uid={member.encrypted_uid} />
                   : '— PENDING ISSUANCE —'}
@@ -708,7 +734,7 @@ if (curRes.ok) {
             {/* Member since */}
             <div style={{
               fontFamily:'var(--font-jetbrains)', fontSize:9,
-              color:'#2a2a2a', letterSpacing:'.1em',
+              color:'#666', letterSpacing:'.1em',
               textTransform:'uppercase',
             }}>
               Member since {new Date(member.created_at).toLocaleDateString('en-IN',{month:'short',year:'numeric'})}
@@ -719,7 +745,7 @@ if (curRes.ok) {
             {member.bio && (
               <p style={{
                 fontFamily:'var(--font-dm-sans)', fontSize:12,
-                color:'#444', textAlign:'center', lineHeight:1.7,
+                color:'#777', textAlign:'center', lineHeight:1.7,
                 marginTop:14, maxWidth:260,
               }}>
                 {member.bio}
@@ -730,19 +756,19 @@ if (curRes.ok) {
             <div style={{display:'flex',gap:10,marginTop:16}}>
               {member.github && (
                 <a href={`https://github.com/${member.github}`} target="_blank" rel="noopener noreferrer"
-                  style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#333',textDecoration:'none',
+                  style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#666',textDecoration:'none',
                     border:'1px solid #1a1a1a',padding:'5px 12px',borderRadius:99,transition:'all .2s'}}
                   onMouseEnter={e=>{e.currentTarget.style.color='#CFFF00';e.currentTarget.style.borderColor='rgba(207,255,0,0.2)'}}
-                  onMouseLeave={e=>{e.currentTarget.style.color='#333';e.currentTarget.style.borderColor='#1a1a1a'}}>
+                  onMouseLeave={e=>{e.currentTarget.style.color='#666';e.currentTarget.style.borderColor='#1a1a1a'}}>
                   GitHub ↗
                 </a>
               )}
               {member.linkedin && (
                 <a href={`https://linkedin.com/in/${member.linkedin}`} target="_blank" rel="noopener noreferrer"
-                  style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#333',textDecoration:'none',
+                  style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#666',textDecoration:'none',
                     border:'1px solid #1a1a1a',padding:'5px 12px',borderRadius:99,transition:'all .2s'}}
                   onMouseEnter={e=>{e.currentTarget.style.color='#CFFF00';e.currentTarget.style.borderColor='rgba(207,255,0,0.2)'}}
-                  onMouseLeave={e=>{e.currentTarget.style.color='#333';e.currentTarget.style.borderColor='#1a1a1a'}}>
+                  onMouseLeave={e=>{e.currentTarget.style.color='#666';e.currentTarget.style.borderColor='#1a1a1a'}}>
                   LinkedIn ↗
                 </a>
               )}
@@ -761,18 +787,18 @@ if (curRes.ok) {
             }}>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:12}}>
                 <div>
-                  <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#444',letterSpacing:'.1em',textTransform:'uppercase',marginBottom:4}}>Experience Points</div>
+                  <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#666',letterSpacing:'.1em',textTransform:'uppercase',marginBottom:4}}>Experience Points</div>
                   <div style={{fontFamily:'var(--font-syne)',fontWeight:800,color:'#CFFF00',fontSize:36,letterSpacing:'-.05em',lineHeight:1}}>
                     {xpCount.toLocaleString()}
-                    <span style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#333',letterSpacing:'.04em',marginLeft:6,fontWeight:400}}>XP</span>
+                    <span style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#666',letterSpacing:'.04em',marginLeft:6,fontWeight:400}}>XP</span>
                   </div>
                 </div>
                 <div style={{textAlign:'right'}}>
-                  <div style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#333',letterSpacing:'.08em',textTransform:'uppercase',marginBottom:2}}>Next milestone</div>
+                  <div style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#666',letterSpacing:'.08em',textTransform:'uppercase',marginBottom:2}}>Next milestone</div>
                   <div style={{fontFamily:'var(--font-syne)',fontWeight:700,color:'#555',fontSize:14}}>
                     {next.icon} {next.label}
                   </div>
-                  <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#2a2a2a'}}>
+                  <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#666'}}>
                     {next.xp - member.xp} XP away
                   </div>
                 </div>
@@ -788,13 +814,13 @@ if (curRes.ok) {
                 }} />
               </div>
               <div style={{display:'flex',justifyContent:'space-between',marginTop:5}}>
-                <span style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#2a2a2a'}}>{prev.xp} XP</span>
-                <span style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#2a2a2a'}}>{next.xp} XP</span>
+                <span style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#555'}}>{prev.xp} XP</span>
+                <span style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#555'}}>{next.xp} XP</span>
               </div>
             </div>
 
             {/* 2×2 stat grid */}
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,flex:1}}>
+            <div className="d-stats-2x2" style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,flex:1}}>
               {[
                 { label:'Badges Earned',    value: badges.length,      unit:'',      icon:'🏅', delay:'.2s' },
                 { label:'Workshops',        value: attendance.length,  unit:'attended',icon:'⚡', delay:'.3s' },
@@ -805,7 +831,7 @@ if (curRes.ok) {
                   animation: revealed ? `fadeSlideUp .6s ${s.delay} cubic-bezier(.16,1,.3,1) forwards` : 'none',
                   opacity:0,
                 }}>
-                  <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#383838',letterSpacing:'.08em',textTransform:'uppercase',marginBottom:10,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                  <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#777',letterSpacing:'.08em',textTransform:'uppercase',marginBottom:10,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                     {s.label}
                     <span style={{fontSize:16}}>{s.icon}</span>
                   </div>
@@ -813,7 +839,7 @@ if (curRes.ok) {
                     {s.value}
                   </div>
                   {s.unit && (
-                    <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#2a2a2a',marginTop:4,textTransform:'uppercase',letterSpacing:'.06em'}}>
+                    <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#666',marginTop:4,textTransform:'uppercase',letterSpacing:'.06em'}}>
                       {s.unit}
                     </div>
                   )}
@@ -839,7 +865,7 @@ if (curRes.ok) {
             animation: revealed ? 'fadeSlideUp .6s .45s cubic-bezier(.16,1,.3,1) forwards' : 'none',
             opacity:0,
           }}>
-            <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#383838',letterSpacing:'.1em',textTransform:'uppercase',marginBottom:14}}>
+            <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#777',letterSpacing:'.1em',textTransform:'uppercase',marginBottom:14}}>
               Skills
             </div>
             <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
@@ -863,7 +889,7 @@ if (curRes.ok) {
         {/* ══════════════════════════════════════════════════════
             BADGES + ATTENDANCE
         ══════════════════════════════════════════════════════ */}
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:20}}>
+        <div className="d-stats-2x2" style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:20}}>
 
           {/* Badges */}
           <div style={{
@@ -872,11 +898,11 @@ if (curRes.ok) {
             animation: revealed ? 'fadeSlideUp .6s .5s cubic-bezier(.16,1,.3,1) forwards' : 'none',
             opacity:0,
           }}>
-            <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#383838',letterSpacing:'.1em',textTransform:'uppercase',marginBottom:16}}>
+            <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#777',letterSpacing:'.1em',textTransform:'uppercase',marginBottom:16}}>
               Badges {badges.length > 0 && <span style={{color:'#CFFF00'}}>· {badges.length}</span>}
             </div>
             {badges.length === 0 ? (
-              <div style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#1e1e1e',letterSpacing:'.04em',padding:'20px 0',textAlign:'center'}}>
+              <div style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#555',letterSpacing:'.04em',padding:'20px 0',textAlign:'center'}}>
                 No badges yet — attend workshops to earn them
               </div>
             ) : (
@@ -886,9 +912,9 @@ if (curRes.ok) {
                     <span style={{fontSize:18,flexShrink:0}}>{b.badge_definitions.icon}</span>
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{fontFamily:'var(--font-syne)',fontWeight:700,color:'#fff',fontSize:12,letterSpacing:'-.01em'}}>{b.badge_definitions.name}</div>
-                      <div style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#333',marginTop:1}}>{b.badge_definitions.description}</div>
+                      <div style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#666',marginTop:1}}>{b.badge_definitions.description}</div>
                     </div>
-                    <div style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#2a2a2a',flexShrink:0}}>
+                    <div style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#666',flexShrink:0}}>
                       {new Date(b.awarded_at).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}
                     </div>
                   </div>
@@ -904,11 +930,11 @@ if (curRes.ok) {
             animation: revealed ? 'fadeSlideUp .6s .55s cubic-bezier(.16,1,.3,1) forwards' : 'none',
             opacity:0,
           }}>
-            <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#383838',letterSpacing:'.1em',textTransform:'uppercase',marginBottom:16}}>
+            <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#777',letterSpacing:'.1em',textTransform:'uppercase',marginBottom:16}}>
               Workshop Attendance
             </div>
             {attendance.length === 0 ? (
-              <div style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#1e1e1e',letterSpacing:'.04em',padding:'20px 0',textAlign:'center'}}>
+              <div style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#555',letterSpacing:'.04em',padding:'20px 0',textAlign:'center'}}>
                 No attendance recorded yet
               </div>
             ) : (
@@ -929,7 +955,7 @@ if (curRes.ok) {
                       <div style={{fontFamily:'var(--font-syne)',fontWeight:700,color:'#ccc',fontSize:12,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
                         {a.workshops?.title ?? 'Workshop'}
                       </div>
-                      <div style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#333',marginTop:1}}>
+                      <div style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#666',marginTop:1}}>
                         {new Date(a.tapped_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}
                         {a.is_late && <span style={{color:'#ff9800',marginLeft:6}}>Late</span>}
                       </div>
@@ -946,7 +972,7 @@ if (curRes.ok) {
         {/* ══════════════════════════════════════════════════════
             TASKS + LEADERBOARD
         ══════════════════════════════════════════════════════ */}
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:20,marginTop:24}}>
+        <div className="d-stats-2x2" style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:20,marginTop:24}}>
 
           {/* Tasks */}
           <div style={{
@@ -955,7 +981,7 @@ if (curRes.ok) {
             animation: revealed ? 'fadeSlideUp .6s .6s cubic-bezier(.16,1,.3,1) forwards' : 'none',
             opacity:0,
           }}>
-            <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#383838',letterSpacing:'.1em',textTransform:'uppercase',marginBottom:16}}>
+            <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#777',letterSpacing:'.1em',textTransform:'uppercase',marginBottom:16}}>
               Workshop Tasks {tasks.length > 0 && <span style={{color:'#CFFF00'}}>· {tasks.length}</span>}
             </div>
 
@@ -973,7 +999,7 @@ if (curRes.ok) {
             )}
 
             {tasks.length === 0 ? (
-              <div style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#1e1e1e',letterSpacing:'.04em',padding:'20px 0',textAlign:'center'}}>
+              <div style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#555',letterSpacing:'.04em',padding:'20px 0',textAlign:'center'}}>
                 No tasks yet — attend a workshop to unlock tasks
               </div>
             ) : (
@@ -983,7 +1009,7 @@ if (curRes.ok) {
                   const statusColor = sub?.status === 'approved' ? '#00e676'
                     : sub?.status === 'rejected' ? '#ff4040'
                     : sub?.status === 'pending'  ? '#ff9800'
-                    : '#2a2a2a'
+                    : '#666'
                   const statusLabel = sub?.status ?? 'not submitted'
                   return (
                     <div key={t.id} style={{
@@ -996,7 +1022,7 @@ if (curRes.ok) {
                           <div style={{fontFamily:'var(--font-syne)',fontWeight:700,color:'#e0e0e0',fontSize:13,letterSpacing:'-.01em'}}>
                             {t.title}
                           </div>
-                          <div style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#383838',marginTop:2,letterSpacing:'.04em'}}>
+                          <div style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#777',marginTop:2,letterSpacing:'.04em'}}>
                             {t.workshops?.title}
                             {t.due_date && ` · Due ${new Date(t.due_date).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}`}
                           </div>
@@ -1012,7 +1038,7 @@ if (curRes.ok) {
                         </div>
                       </div>
 
-                      <p style={{color:'#444',fontSize:12,lineHeight:1.65,margin:'0 0 10px',fontFamily:'var(--font-dm-sans)'}}>
+                      <p style={{color:'#777',fontSize:12,lineHeight:1.65,margin:'0 0 10px',fontFamily:'var(--font-dm-sans)'}}>
                         {t.description}
                       </p>
 
@@ -1082,7 +1108,7 @@ if (curRes.ok) {
                               padding:'8px 16px',
                               background: submitUrl[t.id]?.trim() ? '#CFFF00' : '#111',
                               border:'none', borderRadius:8,
-                              color: submitUrl[t.id]?.trim() ? '#000' : '#333',
+                              color: submitUrl[t.id]?.trim() ? '#000' : '#666',
                               fontFamily:'var(--font-syne)',fontWeight:800,fontSize:12,
                               cursor:'none',transition:'all .2s',whiteSpace:'nowrap',
                             }}>
@@ -1104,11 +1130,11 @@ if (curRes.ok) {
             animation: revealed ? 'fadeSlideUp .6s .65s cubic-bezier(.16,1,.3,1) forwards' : 'none',
             opacity:0,
           }}>
-            <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#383838',letterSpacing:'.1em',textTransform:'uppercase',marginBottom:16}}>
+            <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#777',letterSpacing:'.1em',textTransform:'uppercase',marginBottom:16}}>
               XP Leaderboard
             </div>
             {leaderboard.length === 0 ? (
-              <div style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#1e1e1e',padding:'20px 0',textAlign:'center'}}>
+              <div style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#555',padding:'20px 0',textAlign:'center'}}>
                 No members yet
               </div>
             ) : (
@@ -1130,7 +1156,7 @@ if (curRes.ok) {
                         background: i < 3 ? 'rgba(207,255,0,0.1)' : '#111',
                         display:'flex',alignItems:'center',justifyContent:'center',
                         fontFamily:'var(--font-syne)',fontWeight:800,
-                        color: i < 3 ? '#CFFF00' : '#2a2a2a',
+                        color: i < 3 ? '#CFFF00' : '#555',
                         fontSize:10,
                       }}>
                         {medal ?? i + 1}
@@ -1162,13 +1188,13 @@ if (curRes.ok) {
                           {isMe && <span style={{fontFamily:'var(--font-jetbrains)',fontSize:8,color:'#CFFF00',marginLeft:6,letterSpacing:'.06em'}}>(you)</span>}
                         </div>
                         {entry.member_archetype && (
-                          <div style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#2a2a2a',marginTop:1}}>{entry.member_archetype}</div>
+                          <div style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#666',marginTop:1}}>{entry.member_archetype}</div>
                         )}
                       </div>
 
                       <div style={{
                         fontFamily:'var(--font-syne)',fontWeight:800,
-                        color: isMe ? '#CFFF00' : '#444',
+                        color: isMe ? '#CFFF00' : '#666',
                         fontSize:14,flexShrink:0,
                       }}>
                         {entry.xp}
@@ -1184,7 +1210,7 @@ if (curRes.ok) {
         {/* ══════════════════════════════════════════════════════
             CONNECTIONS + ACTIVITY FEED
         ══════════════════════════════════════════════════════ */}
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:20,marginTop:20}}>
+        <div className="d-con-grid" style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:20,marginTop:20}}>
 
           {/* Connections */}
           <div style={{
@@ -1194,7 +1220,7 @@ if (curRes.ok) {
             opacity:0,
           }}>
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16}}>
-              <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#383838',letterSpacing:'.1em',textTransform:'uppercase'}}>
+              <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#777',letterSpacing:'.1em',textTransform:'uppercase'}}>
                 Connections {connections.length > 0 && <span style={{color:'#CFFF00'}}>· {connections.length}</span>}
               </div>
               <Link href="/connect" style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#CFFF00',textDecoration:'none',border:'1px solid rgba(207,255,0,0.2)',padding:'4px 10px',borderRadius:6,letterSpacing:'.04em'}}>
@@ -1205,7 +1231,7 @@ if (curRes.ok) {
             {connections.length === 0 ? (
               <div style={{textAlign:'center',padding:'20px 0'}}>
                 <div style={{fontSize:24,marginBottom:8,opacity:.3}}>🃏</div>
-                <div style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#1e1e1e',letterSpacing:'.04em'}}>
+                <div style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#555',letterSpacing:'.04em'}}>
                   No connections yet — tap someone's card
                 </div>
               </div>
@@ -1226,13 +1252,13 @@ if (curRes.ok) {
                         <div style={{fontFamily:'var(--font-syne)',fontWeight:700,color:'#ccc',fontSize:12,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
                           {m.first_name} {m.last_name}
                         </div>
-                        <div style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#2a2a2a',marginTop:1}}>
+                        <div style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#666',marginTop:1}}>
                           {m.member_archetype ?? m.stream}
                         </div>
                       </div>
                       {m.id && (
                         <Link href={`/u/${c.members?.encrypted_uid ?? ''}`} target="_blank"
-                          style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#383838',textDecoration:'none'}}>
+                          style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#777',textDecoration:'none'}}>
                           ↗
                         </Link>
                       )}
@@ -1257,13 +1283,13 @@ if (curRes.ok) {
             animation: revealed ? 'fadeSlideUp .6s .75s cubic-bezier(.16,1,.3,1) forwards' : 'none',
             opacity:0,
           }}>
-            <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#383838',letterSpacing:'.1em',textTransform:'uppercase',marginBottom:16}}>
+            <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#777',letterSpacing:'.1em',textTransform:'uppercase',marginBottom:16}}>
               Activity
             </div>
 
             {activity.length === 0 ? (
               <div style={{textAlign:'center',padding:'20px 0'}}>
-                <div style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#1e1e1e',letterSpacing:'.04em'}}>
+                <div style={{fontFamily:'var(--font-jetbrains)',fontSize:11,color:'#555',letterSpacing:'.04em'}}>
                   No activity yet — attend a workshop to start
                 </div>
               </div>
@@ -1288,7 +1314,7 @@ if (curRes.ok) {
                       <div style={{fontFamily:'var(--font-dm-sans)',fontSize:12,color:'#555',lineHeight:1.5}}>
                         {a.description}
                       </div>
-                      <div style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#2a2a2a',marginTop:3}}>
+                      <div style={{fontFamily:'var(--font-jetbrains)',fontSize:9,color:'#666',marginTop:3}}>
                         {new Date(a.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}
                       </div>
                     </div>
@@ -1309,7 +1335,7 @@ if (curRes.ok) {
             animation: revealed ? 'fadeSlideUp .6s .8s cubic-bezier(.16,1,.3,1) forwards' : 'none',
             opacity:0, position:'relative', overflow:'hidden',
             display:'flex', alignItems:'center', gap:24,
-            cursor:'pointer', transition:'border-color .2s',
+            cursor:'pointer', transition:'border-color .2s', flexWrap:'wrap',
           }}
             onMouseEnter={(e:any)=>e.currentTarget.style.borderColor='rgba(207,255,0,0.3)'}
             onMouseLeave={(e:any)=>e.currentTarget.style.borderColor='#1e1e1e'}
@@ -1330,7 +1356,7 @@ if (curRes.ok) {
               <div style={{fontFamily:'var(--font-syne)',fontWeight:800,color:'#fff',fontSize:15,letterSpacing:'-.02em',marginBottom:2}}>
                 🏎️ F1 Reaction Test
               </div>
-              <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#383838',letterSpacing:'.04em'}}>
+              <div style={{fontFamily:'var(--font-jetbrains)',fontSize:10,color:'#777',letterSpacing:'.04em'}}>
                 Test your reflexes against the F1 countdown lights
               </div>
             </div>
@@ -1370,7 +1396,7 @@ if (curRes.ok) {
     <div style={{textAlign:'center',padding:'32px 16px',
       border:'1px dashed #1a1a1a',borderRadius:12}}>
       <div style={{fontSize:32,marginBottom:10,opacity:0.4}}>🎓</div>
-      <div style={{fontFamily:'var(--font-syne)',fontWeight:700,color:'#333',
+      <div style={{fontFamily:'var(--font-syne)',fontWeight:700,color:'#666',
         fontSize:14,letterSpacing:'-.02em',marginBottom:6}}>
         No workshops running right now
       </div>
