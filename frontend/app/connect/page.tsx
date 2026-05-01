@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import Link from 'next/link'
@@ -26,7 +26,7 @@ function extractUID(url: string): string | null {
   return match ? match[1] : null
 }
 
-export default function ConnectPage() {
+function ConnectPageInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [state,      setState]     = useState<State>('idle')
@@ -459,5 +459,17 @@ export default function ConnectPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function ConnectPage() {
+  return (
+    <Suspense fallback={
+      <div style={{minHeight:'100vh',background:'#080808',display:'flex',alignItems:'center',justifyContent:'center'}}>
+        <div style={{fontFamily:'var(--font-jetbrains)',fontSize:12,color:'#333'}}>Loading...</div>
+      </div>
+    }>
+      <ConnectPageInner />
+    </Suspense>
   )
 }
