@@ -120,20 +120,25 @@ def nfc_login(request: Request, payload: NFCLoginRequest):
     if not m.get("auth_user_id"):
         raise HTTPException(400, "Member account not fully set up. Use email login.")
 
-    # Create session via generate_link + verify_otp
-    # generate_link returns a hashed_token in properties that we use directly
+    # Create session via generate_link + verify_otp.
+    # IMPORTANT: use a FRESH client for auth operations — the singleton gets
+    # polluted by verify_otp (it stores the user session internally).  A fresh
+    # client is discarded after use, so subsequent NFC logins always work.
     try:
         import logging
+        from supabase import create_client as _create
+        from core.config import settings
         logger = logging.getLogger(__name__)
 
+        auth_sb = _create(settings.supabase_url, settings.supabase_service_role_key)
+
         # Step 1: Generate a magic link (server-side only, never sent to user)
-        link_resp = sb.auth.admin.generate_link({
+        link_resp = auth_sb.auth.admin.generate_link({
             "type": "magiclink",
             "email": m["email"],
         })
 
         # Step 2: Get hashed_token directly from response properties
-        # (Modern Supabase returns this in properties, not just the URL)
         token_hash = getattr(link_resp.properties, 'hashed_token', None)
 
         if not token_hash:
@@ -152,7 +157,7 @@ def nfc_login(request: Request, payload: NFCLoginRequest):
             raise HTTPException(500, "Session creation failed. Contact club leads.")
 
         # Step 3: Verify the OTP token to get a real session
-        session_resp = sb.auth.verify_otp({
+        session_resp = auth_sb.auth.verify_otp({
             "type": "email",
             "token_hash": token_hash,
         })
@@ -161,23 +166,9 @@ def nfc_login(request: Request, payload: NFCLoginRequest):
             logger.error("verify_otp returned no session")
             raise HTTPException(500, "Session creation failed. Contact club leads.")
 
-        # Extract tokens before signing out
-        access_token  = session_resp.session.access_token
-        refresh_token = session_resp.session.refresh_token
-
-        # IMPORTANT: clear the singleton client's local session so the next NFC tap works.
-        # verify_otp sets a session on the shared client; if we don't clear it,
-        # the next call will fail because the client is already "logged in".
-        # Use scope='local' — do NOT use 'global' as that revokes the token on
-        # Supabase's server, killing the tokens we just handed to the frontend.
-        try:
-            sb.auth.sign_out({"scope": "local"})
-        except Exception:
-            pass  # non-critical — the tokens are already captured
-
         return {
-            "access_token":  access_token,
-            "refresh_token": refresh_token,
+            "access_token":  session_resp.session.access_token,
+            "refresh_token": session_resp.session.refresh_token,
             "member":        {"first_name": m["first_name"], "last_name": m["last_name"]},
         }
     except HTTPException:
