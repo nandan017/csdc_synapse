@@ -161,9 +161,21 @@ def nfc_login(request: Request, payload: NFCLoginRequest):
             logger.error("verify_otp returned no session")
             raise HTTPException(500, "Session creation failed. Contact club leads.")
 
+        # Extract tokens before signing out
+        access_token  = session_resp.session.access_token
+        refresh_token = session_resp.session.refresh_token
+
+        # IMPORTANT: sign out the singleton client so the next NFC tap works.
+        # verify_otp sets a session on the shared client; if we don't clear it,
+        # the next call will fail because the client is already "logged in".
+        try:
+            sb.auth.sign_out()
+        except Exception:
+            pass  # non-critical — the tokens are already captured
+
         return {
-            "access_token":  session_resp.session.access_token,
-            "refresh_token": session_resp.session.refresh_token,
+            "access_token":  access_token,
+            "refresh_token": refresh_token,
             "member":        {"first_name": m["first_name"], "last_name": m["last_name"]},
         }
     except HTTPException:
