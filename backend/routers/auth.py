@@ -165,11 +165,13 @@ def nfc_login(request: Request, payload: NFCLoginRequest):
         access_token  = session_resp.session.access_token
         refresh_token = session_resp.session.refresh_token
 
-        # IMPORTANT: sign out the singleton client so the next NFC tap works.
+        # IMPORTANT: clear the singleton client's local session so the next NFC tap works.
         # verify_otp sets a session on the shared client; if we don't clear it,
         # the next call will fail because the client is already "logged in".
+        # Use scope='local' — do NOT use 'global' as that revokes the token on
+        # Supabase's server, killing the tokens we just handed to the frontend.
         try:
-            sb.auth.sign_out()
+            sb.auth.sign_out({"scope": "local"})
         except Exception:
             pass  # non-critical — the tokens are already captured
 
