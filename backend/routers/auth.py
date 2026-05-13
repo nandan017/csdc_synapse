@@ -121,9 +121,8 @@ def nfc_login(request: Request, payload: NFCLoginRequest):
         raise HTTPException(400, "Member account not fully set up. Use email login.")
 
     # Create session via generate_link + verify_otp
-    # (admin.create_session is not available in supabase-py v2.5 / gotrue v2.12)
+    # generate_link returns a hashed_token in properties that we use directly
     try:
-        from urllib.parse import urlparse, parse_qs
         import logging
         logger = logging.getLogger(__name__)
 
@@ -133,26 +132,34 @@ def nfc_login(request: Request, payload: NFCLoginRequest):
             "email": m["email"],
         })
 
-        # Step 2: Extract token_hash from the generated action link
-        action_link = link_resp.properties.action_link
-        parsed = urlparse(action_link)
-        query_params = parse_qs(parsed.query)
-        token_hash = query_params.get("token_hash", [None])[0]
+        # Step 2: Get hashed_token directly from response properties
+        # (Modern Supabase returns this in properties, not just the URL)
+        token_hash = getattr(link_resp.properties, 'hashed_token', None)
 
         if not token_hash:
-            # Fallback: try fragment-based token
-            fragment_params = parse_qs(parsed.fragment)
-            token_hash = fragment_params.get("token_hash", [None])[0]
+            # Fallback: try parsing from action_link URL
+            from urllib.parse import urlparse, parse_qs
+            action_link = link_resp.properties.action_link
+            parsed = urlparse(action_link)
+            query_params = parse_qs(parsed.query)
+            token_hash = query_params.get("token_hash", [None])[0]
+            if not token_hash:
+                fragment_params = parse_qs(parsed.fragment)
+                token_hash = fragment_params.get("token_hash", [None])[0]
 
         if not token_hash:
-            logger.error(f"No token_hash found in action_link: {action_link}")
+            logger.error(f"No token_hash found. Properties: {dir(link_resp.properties)}")
             raise HTTPException(500, "Session creation failed. Contact club leads.")
 
         # Step 3: Verify the OTP token to get a real session
         session_resp = sb.auth.verify_otp({
-            "type": "magiclink",
+            "type": "email",
             "token_hash": token_hash,
         })
+
+        if not session_resp.session:
+            logger.error("verify_otp returned no session")
+            raise HTTPException(500, "Session creation failed. Contact club leads.")
 
         return {
             "access_token":  session_resp.session.access_token,

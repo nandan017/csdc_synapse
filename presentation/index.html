@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Synapse — Chathurya SDC</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=JetBrains+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--accent:#CFFF00;--bg:#060606;--card:#0a0a0a;--border:#1a1a1a;--grey:#888;--text:#e0e0e0}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overflow:hidden;cursor:none;height:100vh;width:100vw}
+.cursor{position:fixed;z-index:99999;pointer-events:none;width:6px;height:6px;border-radius:50%;background:var(--accent);transform:translate(-50%,-50%);mix-blend-mode:screen;transition:opacity .2s}
+
+/* Progress bar */
+.progress{position:fixed;top:0;left:0;height:3px;background:var(--accent);z-index:9999;transition:width .4s cubic-bezier(.4,0,.2,1)}
+
+/* Slide counter */
+.counter{position:fixed;bottom:24px;right:32px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#333;letter-spacing:.1em;z-index:100}
+
+/* Nav hint */
+.nav-hint{position:fixed;bottom:24px;left:32px;font-family:'JetBrains Mono',monospace;font-size:10px;color:#222;letter-spacing:.06em;z-index:100}
+
+/* Slides container */
+.deck{position:relative;width:100vw;height:100vh}
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 80px;opacity:0;pointer-events:none;transform:translateY(30px);transition:opacity .6s ease,transform .6s ease}
+.slide.active{opacity:1;pointer-events:auto;transform:translateY(0)}
+.slide.exit-up{opacity:0;transform:translateY(-30px)}
+
+/* Typography */
+.f-syne{font-family:'Syne',sans-serif}
+.f-jb{font-family:'JetBrains Mono',monospace}
+.f-dm{font-family:'DM Sans',sans-serif}
+
+.tag{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--accent);letter-spacing:.15em;text-transform:uppercase;margin-bottom:16px}
+
+.hero-title{font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(3rem,8vw,6.5rem);letter-spacing:-.06em;line-height:.9;color:#fff;text-align:center}
+.hero-title span{color:var(--accent)}
+
+.subtitle{font-family:'DM Sans',sans-serif;font-weight:300;font-size:clamp(14px,1.8vw,20px);color:#555;max-width:600px;text-align:center;line-height:1.8;margin-top:20px}
+
+.section-title{font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(2rem,5vw,3.5rem);letter-spacing:-.05em;line-height:1;color:#fff;margin-bottom:12px}
+.section-title span{color:var(--accent)}
+
+.body-text{font-family:'DM Sans',sans-serif;font-size:clamp(13px,1.4vw,17px);color:#777;line-height:1.85;max-width:560px}
+
+/* Screenshot placeholder */
+.screenshot{width:100%;max-width:680px;aspect-ratio:16/9;border:1px solid var(--border);border-radius:14px;background:#0d0d0d;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;margin-top:28px}
+.screenshot::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(207,255,0,.02),transparent);pointer-events:none}
+.screenshot .label{font-family:'JetBrains Mono',monospace;font-size:11px;color:#333;letter-spacing:.1em;text-transform:uppercase}
+.screenshot img{width:100%;height:100%;object-fit:cover;border-radius:14px}
+
+/* Feature grid */
+.feat-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:700px;width:100%;margin-top:24px}
+.feat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 22px;transition:border-color .2s}
+.feat-card:hover{border-color:rgba(207,255,0,.2)}
+.feat-card .icon{font-size:22px;margin-bottom:10px}
+.feat-card h3{font-family:'Syne',sans-serif;font-weight:700;font-size:15px;color:#fff;margin-bottom:6px;letter-spacing:-.02em}
+.feat-card p{font-family:'JetBrains Mono',monospace;font-size:10px;color:#555;line-height:1.7;letter-spacing:.02em}
+
+/* Two-col layout */
+.two-col{display:flex;gap:48px;align-items:center;width:100%;max-width:1000px}
+.two-col .col-text{flex:1}
+.two-col .col-img{flex:1}
+.two-col .col-img .screenshot{margin-top:0;max-width:100%}
+
+/* Steps */
+.steps{display:flex;flex-direction:column;gap:14px;margin-top:20px}
+.step{display:flex;align-items:flex-start;gap:14px}
+.step-num{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:var(--accent);line-height:1;min-width:28px}
+.step-text{font-family:'DM Sans',sans-serif;font-size:14px;color:#777;line-height:1.7}
+.step-text strong{color:#ccc;font-weight:500}
+
+/* Stagger animation for children */
+.slide.active .stagger>*{opacity:0;animation:fadeUp .5s ease forwards}
+.slide.active .stagger>*:nth-child(1){animation-delay:.1s}
+.slide.active .stagger>*:nth-child(2){animation-delay:.25s}
+.slide.active .stagger>*:nth-child(3){animation-delay:.4s}
+.slide.active .stagger>*:nth-child(4){animation-delay:.55s}
+.slide.active .stagger>*:nth-child(5){animation-delay:.7s}
+.slide.active .stagger>*:nth-child(6){animation-delay:.85s}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+
+/* Particle canvas */
+#particles{position:fixed;inset:0;pointer-events:none;z-index:0}
+
+/* Tech pills */
+.tech-pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.pill{font-family:'JetBrains Mono',monospace;font-size:10px;color:#555;border:1px solid var(--border);padding:5px 14px;border-radius:99px;letter-spacing:.04em;transition:all .2s}
+.pill:hover{border-color:rgba(207,255,0,.3);color:var(--accent)}
+
+/* Flow arrow */
+.flow{display:flex;align-items:center;gap:12px;margin-top:20px;flex-wrap:wrap;justify-content:center}
+.flow-item{font-family:'JetBrains Mono',monospace;font-size:11px;color:#555;border:1px solid var(--border);padding:8px 16px;border-radius:8px;background:var(--card)}
+.flow-arrow{color:#333;font-size:14px}
+</style>
+</head>
+<body>
+<div class="cursor" id="cursor"></div>
+<canvas id="particles"></canvas>
+<div class="progress" id="progress"></div>
+<div class="counter" id="counter"></div>
+<div class="nav-hint">← → or click to navigate</div>
+
+<div class="deck" id="deck">
+
+<!-- SLIDE 1: HOOK -->
+<div class="slide active" data-slide="0">
+  <div class="stagger" style="text-align:center">
+    <img src="logo.png" alt="" style="width:48px;height:48px;object-fit:contain;filter:drop-shadow(0 0 16px rgba(207,255,0,.5));animation:float 4s ease-in-out infinite">
+    <div class="hero-title">SYN<span>APSE</span></div>
+    <div class="subtitle">One platform. NFC-powered. Built to run a student developers club — not just manage it.</div>
+    <div class="f-jb" style="font-size:10px;color:#333;letter-spacing:.15em;margin-top:32px;text-transform:uppercase">Chathurya Student Developers Club</div>
+  </div>
+</div>
+
+<!-- SLIDE 2: THE PROBLEM -->
+<div class="slide" data-slide="1">
+  <div class="stagger" style="text-align:center">
+    <div class="tag">The reality check</div>
+    <div class="section-title">Running a club shouldn't<br>feel like <span>this</span>.</div>
+    <div class="feat-grid" style="margin-top:28px">
+      <div class="feat-card"><div class="icon">📋</div><h3>Attendance sheets</h3><p>Paper sign-ins that nobody can read. Lost sheets. No data.</p></div>
+      <div class="feat-card"><div class="icon">💬</div><h3>WhatsApp chaos</h3><p>Important announcements buried under 400 memes.</p></div>
+      <div class="feat-card"><div class="icon">📊</div><h3>Zero analytics</h3><p>"How many people came last time?" *shrugs*</p></div>
+      <div class="feat-card"><div class="icon">🗂️</div><h3>Resource graveyard</h3><p>Workshop materials lost in someone's Google Drive. Forever.</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 3: MEET SYNAPSE -->
+<div class="slide" data-slide="2">
+  <div class="stagger" style="text-align:center">
+    <div class="tag">The solution</div>
+    <div class="section-title">Meet <span>Synapse</span>.</div>
+    <div class="body-text" style="text-align:center">A complete club management ecosystem — NFC cards for identity, a dashboard for members, and a command center for leads. Everything connected. Everything tracked.</div>
+    <div class="screenshot"><span class="label">[ Screenshot: Homepage ]</span></div>
+  </div>
+</div>
+
+<!-- SLIDE 4: REGISTRATION -->
+<div class="slide" data-slide="3">
+  <div class="two-col">
+    <div class="col-text stagger">
+      <div class="tag">Step 01 · Join</div>
+      <div class="section-title">It starts with an <span>application</span>.</div>
+      <div class="steps">
+        <div class="step"><div class="step-num">1</div><div class="step-text"><strong>Fill the form</strong> — name, stream, year, section, T-shirt size, socials. That's it.</div></div>
+        <div class="step"><div class="step-num">2</div><div class="step-text"><strong>Set a password</strong> — strength meter included. We're teaching good habits from day one.</div></div>
+        <div class="step"><div class="step-num">3</div><div class="step-text"><strong>Submit & wait</strong> — your application goes to the leads for review.</div></div>
+      </div>
+    </div>
+    <div class="col-img stagger">
+      <div class="screenshot"><span class="label">[ Screenshot: Registration Form ]</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 5: APPROVAL + ONBOARDING -->
+<div class="slide" data-slide="4">
+  <div class="two-col">
+    <div class="col-img stagger">
+      <div class="screenshot"><span class="label">[ Screenshot: Onboarding Flow ]</span></div>
+    </div>
+    <div class="col-text stagger">
+      <div class="tag">Step 02 · Welcome</div>
+      <div class="section-title">Approved? <span>You're in.</span></div>
+      <div class="steps">
+        <div class="step"><div class="step-num">1</div><div class="step-text"><strong>Email invite</strong> — a magic link lands in your inbox via Brevo.</div></div>
+        <div class="step"><div class="step-num">2</div><div class="step-text"><strong>Profile setup</strong> — add a bio, pick your skills, upload an avatar.</div></div>
+        <div class="step"><div class="step-num">3</div><div class="step-text"><strong>Account created</strong> — Supabase auth, encrypted NFC UID, the works.</div></div>
+      </div>
+      <div class="flow" style="margin-top:20px">
+        <div class="flow-item">Apply</div><div class="flow-arrow">→</div>
+        <div class="flow-item">Review</div><div class="flow-arrow">→</div>
+        <div class="flow-item">Invite</div><div class="flow-arrow">→</div>
+        <div class="flow-item" style="border-color:rgba(207,255,0,.3);color:var(--accent)">Member ⚡</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 6: NFC IDENTITY -->
+<div class="slide" data-slide="5">
+  <div class="stagger" style="text-align:center">
+    <div class="tag">Identity</div>
+    <div class="section-title">Your card is <span>you</span>.</div>
+    <div class="body-text" style="text-align:center">Every member gets an NFC card. One tap unlocks everything — attendance, voting, connecting, feedback. No logins. No QR fumbling. Just tap.</div>
+    <div class="feat-grid" style="max-width:600px;margin-top:24px">
+      <div class="feat-card"><div class="icon">🔐</div><h3>Encrypted UID</h3><p>AES-encrypted identity. Nobody can clone your card.</p></div>
+      <div class="feat-card"><div class="icon">📱</div><h3>Web NFC API</h3><p>Works on Chrome for Android. No app needed.</p></div>
+      <div class="feat-card"><div class="icon">🌐</div><h3>Public profiles</h3><p>Scan anyone's card → see their profile page instantly.</p></div>
+      <div class="feat-card"><div class="icon">🔄</div><h3>QR fallback</h3><p>iPhone? No NFC? QR codes have you covered.</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 7: DASHBOARD -->
+<div class="slide" data-slide="6">
+  <div class="two-col">
+    <div class="col-text stagger">
+      <div class="tag">Home base</div>
+      <div class="section-title">Your <span>dashboard</span>.</div>
+      <div class="body-text">Everything a member needs in one place. XP tracker, upcoming workshops, recent activity, quick actions — no clutter, just what matters.</div>
+      <div class="tech-pills" style="margin-top:16px">
+        <div class="pill">XP tracking</div>
+        <div class="pill">Workshop calendar</div>
+        <div class="pill">Quick connect</div>
+        <div class="pill">Vault access</div>
+        <div class="pill">F1 reaction</div>
+      </div>
+    </div>
+    <div class="col-img stagger">
+      <div class="screenshot"><span class="label">[ Screenshot: Dashboard ]</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 8: ATTENDANCE -->
+<div class="slide" data-slide="7">
+  <div class="two-col">
+    <div class="col-img stagger">
+      <div class="screenshot"><span class="label">[ Screenshot: Attendance Page ]</span></div>
+    </div>
+    <div class="col-text stagger">
+      <div class="tag">Workshops</div>
+      <div class="section-title"><span>Tap in.</span> That's it.</div>
+      <div class="body-text">Workshop starts. Open the attendance page on any phone. Members tap their NFC cards. Real-time counter updates. XP awarded instantly. Late arrivals? Tracked separately.</div>
+      <div class="steps" style="margin-top:16px">
+        <div class="step"><div class="step-num">⚡</div><div class="step-text">Leads activate a workshop from the admin panel</div></div>
+        <div class="step"><div class="step-num">🃏</div><div class="step-text">Members tap their NFC card on the phone</div></div>
+        <div class="step"><div class="step-num">✓</div><div class="step-text">Name flashes, XP awarded, counter goes up</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 9: CONNECT -->
+<div class="slide" data-slide="8">
+  <div class="two-col">
+    <div class="col-text stagger">
+      <div class="tag">Networking</div>
+      <div class="section-title">Tap to <span>connect</span>.</div>
+      <div class="body-text">Met someone interesting at a workshop? Tap their NFC card. Boom — you're connected. See their skills, GitHub, LinkedIn. No Instagram handles scribbled on napkins.</div>
+      <div class="body-text" style="margin-top:12px;font-size:13px;color:#555">No NFC? Show your QR code. They scan it. Same result, different method.</div>
+    </div>
+    <div class="col-img stagger">
+      <div class="screenshot"><span class="label">[ Screenshot: Connect Page ]</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 10: VAULT -->
+<div class="slide" data-slide="9">
+  <div class="two-col">
+    <div class="col-img stagger">
+      <div class="screenshot"><span class="label">[ Screenshot: Resource Vault ]</span></div>
+    </div>
+    <div class="col-text stagger">
+      <div class="tag">Knowledge</div>
+      <div class="section-title">The <span>vault</span>.</div>
+      <div class="body-text">Workshop slides, code repos, reading lists — all in one searchable, tagged, community-curated space. No more "can someone share the link again?" in the group chat.</div>
+      <div class="tech-pills" style="margin-top:16px">
+        <div class="pill">Category filters</div>
+        <div class="pill">Search</div>
+        <div class="pill">View tracking</div>
+        <div class="pill">Tag system</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 11: F1 REACTION -->
+<div class="slide" data-slide="10">
+  <div class="two-col">
+    <div class="col-text stagger">
+      <div class="tag">Fun stuff</div>
+      <div class="section-title"><span>F1</span> Reaction.</div>
+      <div class="body-text">Inspired by Formula 1 reaction tests. The screen goes dark. Wait for the signal. Tap as fast as you can. Your reaction time is recorded in milliseconds.</div>
+      <div class="body-text" style="margin-top:12px;color:#555;font-size:13px">Leaderboards. Personal bests. Streaks. Members actually compete over this — it's become a thing at every workshop.</div>
+      <div class="flow" style="margin-top:20px">
+        <div class="flow-item">Wait...</div><div class="flow-arrow">→</div>
+        <div class="flow-item" style="border-color:rgba(207,255,0,.3);color:var(--accent)">GO!</div><div class="flow-arrow">→</div>
+        <div class="flow-item">237ms ⚡</div>
+      </div>
+    </div>
+    <div class="col-img stagger">
+      <div class="screenshot"><span class="label">[ Screenshot: F1 Reaction Game ]</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 12: LIVE POLLS -->
+<div class="slide" data-slide="11">
+  <div class="two-col">
+    <div class="col-img stagger">
+      <div class="screenshot"><span class="label">[ Screenshot: Live Voting ]</span></div>
+    </div>
+    <div class="col-text stagger">
+      <div class="tag">Democracy</div>
+      <div class="section-title">Live <span>polls</span>.</div>
+      <div class="body-text">Decisions made together, in real-time. Leads create a poll. Members select their choice and tap their NFC card to vote. Results update live. One card, one vote — no duplicates.</div>
+      <div class="steps" style="margin-top:16px">
+        <div class="step"><div class="step-num">1</div><div class="step-text">Pick your option on screen</div></div>
+        <div class="step"><div class="step-num">2</div><div class="step-text">Tap your NFC card to confirm</div></div>
+        <div class="step"><div class="step-num">3</div><div class="step-text">Watch the live tally shift</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 13: FEEDBACK -->
+<div class="slide" data-slide="12">
+  <div class="two-col">
+    <div class="col-text stagger">
+      <div class="tag">Improvement</div>
+      <div class="section-title">Honest <span>feedback</span>.</div>
+      <div class="body-text">Every workshop ends with a feedback round. Tap your card to identify yourself, rate the session, highlight what worked, suggest what could be better. NFC-verified, so we know it's real.</div>
+      <div class="feat-grid" style="max-width:400px;margin-top:16px">
+        <div class="feat-card" style="padding:14px 16px"><div class="icon" style="font-size:16px;margin-bottom:6px">⭐</div><h3 style="font-size:13px">Star rating</h3></div>
+        <div class="feat-card" style="padding:14px 16px"><div class="icon" style="font-size:16px;margin-bottom:6px">💬</div><h3 style="font-size:13px">Open comments</h3></div>
+      </div>
+    </div>
+    <div class="col-img stagger">
+      <div class="screenshot"><span class="label">[ Screenshot: Feedback Page ]</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 14: MEMBERS + PUBLIC PROFILES -->
+<div class="slide" data-slide="13">
+  <div class="stagger" style="text-align:center">
+    <div class="tag">Community</div>
+    <div class="section-title">Find your <span>people</span>.</div>
+    <div class="body-text" style="text-align:center">The member directory lets you search by name, filter by skills, stream, or year. And every member gets a public profile page — scan their NFC card and see who they are.</div>
+    <div style="display:flex;gap:16px;margin-top:24px;width:100%;max-width:800px">
+      <div class="screenshot" style="flex:1"><span class="label">[ Screenshot: Members Directory ]</span></div>
+      <div class="screenshot" style="flex:1"><span class="label">[ Screenshot: Public Profile ]</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 15: ADMIN PANEL -->
+<div class="slide" data-slide="14">
+  <div class="stagger" style="text-align:center">
+    <div class="tag">Command center</div>
+    <div class="section-title">The <span>admin</span> panel.</div>
+    <div class="body-text" style="text-align:center">Everything the leads need. Review applications, manage members, create workshops, assign NFC cards, publish resources, view analytics — all from one dark-mode dashboard.</div>
+    <div class="screenshot" style="max-width:800px"><span class="label">[ Screenshot: Admin Panel ]</span></div>
+    <div class="tech-pills" style="justify-content:center;margin-top:16px">
+      <div class="pill">Applications</div>
+      <div class="pill">Members</div>
+      <div class="pill">Workshops</div>
+      <div class="pill">NFC cards</div>
+      <div class="pill">Tasks</div>
+      <div class="pill">Analytics</div>
+      <div class="pill">Vault</div>
+      <div class="pill">Settings</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 16: TECH STACK -->
+<div class="slide" data-slide="15">
+  <div class="stagger" style="text-align:center">
+    <div class="tag">Under the hood</div>
+    <div class="section-title">Built with <span>intention</span>.</div>
+    <div class="feat-grid" style="max-width:700px;margin-top:24px">
+      <div class="feat-card"><div class="icon">⚛️</div><h3>Next.js 14</h3><p>App Router, server components, middleware auth, API proxy routes.</p></div>
+      <div class="feat-card"><div class="icon">⚡</div><h3>FastAPI</h3><p>Python backend. Async routes. Clean REST API. Handles all business logic.</p></div>
+      <div class="feat-card"><div class="icon">🗄️</div><h3>Supabase</h3><p>PostgreSQL + Auth + Storage. Row-level security. Real-time capable.</p></div>
+      <div class="feat-card"><div class="icon">📡</div><h3>Web NFC API</h3><p>Browser-native NFC reading. AES-encrypted UIDs. Zero app installs.</p></div>
+      <div class="feat-card"><div class="icon">🚀</div><h3>Vercel</h3><p>Frontend deployed on Vercel. Edge middleware for auth. Auto-scaling.</p></div>
+      <div class="feat-card"><div class="icon">📧</div><h3>Brevo</h3><p>Transactional emails for invite links. Templated, reliable delivery.</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 17: CLOSING -->
+<div class="slide" data-slide="16">
+  <div class="stagger" style="text-align:center">
+    <img src="logo.png" alt="" style="width:56px;height:56px;object-fit:contain;filter:drop-shadow(0 0 20px rgba(207,255,0,.6));animation:float 4s ease-in-out infinite">
+    <div class="hero-title" style="font-size:clamp(2.5rem,6vw,4.5rem)">This is <span>Synapse</span>.</div>
+    <div class="subtitle" style="max-width:500px">Built by Chathurya. For Chathurya.<br>Every tap, every workshop, every connection — tracked, measured, meaningful.</div>
+    <div class="f-jb" style="font-size:10px;color:#333;letter-spacing:.15em;margin-top:40px;text-transform:uppercase">Chathurya Student Developers Club · 2025</div>
+  </div>
+</div>
+
+</div><!-- end deck -->
+
+<script>
+// Cursor
+const cursor=document.getElementById('cursor');
+document.addEventListener('mousemove',e=>{cursor.style.left=e.clientX+'px';cursor.style.top=e.clientY+'px'});
+
+// Particles
+const canvas=document.getElementById('particles'),ctx=canvas.getContext('2d');
+let W,H,particles=[];
+function initParticles(){W=canvas.width=innerWidth;H=canvas.height=innerHeight;
+particles=Array.from({length:Math.floor(W*H/18000)},()=>({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.25,vy:(Math.random()-.5)*.25,s:Math.random()*1.2+.3,a:Math.random()*.2+.03}))}
+function drawParticles(){ctx.clearRect(0,0,W,H);particles.forEach(p=>{p.x=(p.x+p.vx+W)%W;p.y=(p.y+p.vy+H)%H;ctx.beginPath();ctx.arc(p.x,p.y,p.s,0,Math.PI*2);ctx.fillStyle=`rgba(207,255,0,${p.a})`;ctx.fill()});requestAnimationFrame(drawParticles)}
+initParticles();drawParticles();addEventListener('resize',initParticles);
+
+// Slide logic
+let current=0;
+const slides=document.querySelectorAll('.slide');
+const total=slides.length;
+const progress=document.getElementById('progress');
+const counter=document.getElementById('counter');
+
+function goTo(n){
+  if(n<0||n>=total||n===current)return;
+  const prev=current;
+  slides[prev].classList.remove('active');
+  slides[prev].classList.add('exit-up');
+  current=n;
+  slides[current].classList.add('active');
+  setTimeout(()=>slides[prev].classList.remove('exit-up'),700);
+  progress.style.width=((current/(total-1))*100)+'%';
+  counter.textContent=String(current+1).padStart(2,'0')+' / '+String(total).padStart(2,'0');
+}
+// init
+progress.style.width='0%';
+counter.textContent='01 / '+String(total).padStart(2,'0');
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key===' ')goTo(current+1);
+  if(e.key==='ArrowLeft')goTo(current-1);
+});
+document.addEventListener('click',e=>{
+  if(e.clientX>innerWidth/2)goTo(current+1);else goTo(current-1);
+});
+</script>
+</body>
+</html>
